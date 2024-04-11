@@ -53,11 +53,14 @@ void exposeActuationSquashing() {
           ":param data: actuation data\n"
           ":param x: state point (dim. state.nx)\n"
           ":param u: control input (dim. nu).")
-      .def("createData", &ActuationSquashingModel::createData, bp::args("self"),
+      .def("createData", &ActuationSquashingModel::createData, 
+          bp::with_custodian_and_ward_postcall<0, 2>(),
+          bp::args("self","data"),
            "Create the actuation squashing data.\n\n"
            "Each actuation model (AM) has its own data that needs to be "
            "allocated.\n"
            "This function returns the allocated data for a predefined AM.\n"
+           ":param data: Pinocchio data\n"
            ":return AM data.")
       .add_property(
           "squashing",
@@ -81,11 +84,13 @@ void exposeActuationSquashing() {
       "user-defined actuation model. The actuation data typically is allocated "
       "onces by running\n"
       "model.createData().",
-      bp::init<ActuationSquashingModel*>(
-          bp::args("self", "model"),
+      bp::init<ActuationSquashingModel*, pinocchio::Data*>(
+          bp::args("self", "model", "data"),
           "Create common data shared between actuation models.\n\n"
           "The actuation data uses the model in order to first process it.\n"
-          ":param model: actuation model"))
+          ":param model: actuation model\n"
+          ":param data: Pinocchio data")[bp::with_custodian_and_ward<
+          1, 2, bp::with_custodian_and_ward<1, 3> >()])
       .add_property(
           "squashing",
           bp::make_getter(&ActuationSquashingData::squashing,

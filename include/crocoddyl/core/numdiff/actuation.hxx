@@ -163,8 +163,9 @@ void ActuationModelNumDiffTpl<Scalar>::torqueTransform(
 
 template <typename Scalar>
 boost::shared_ptr<ActuationDataAbstractTpl<Scalar> >
-ActuationModelNumDiffTpl<Scalar>::createData() {
-  return boost::allocate_shared<Data>(Eigen::aligned_allocator<Data>(), this);
+ActuationModelNumDiffTpl<Scalar>::createData(
+  pinocchio::DataTpl<Scalar>* const data) {
+  return boost::allocate_shared<Data>(Eigen::aligned_allocator<Data>(), this, data);
 }
 
 template <typename Scalar>

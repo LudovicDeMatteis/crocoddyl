@@ -14,6 +14,8 @@
 #include <boost/shared_ptr.hpp>
 #include <stdexcept>
 
+#include <pinocchio/multibody/data.hpp>
+
 #include "crocoddyl/core/fwd.hpp"
 #include "crocoddyl/core/mathbase.hpp"
 #include "crocoddyl/core/state-base.hpp"

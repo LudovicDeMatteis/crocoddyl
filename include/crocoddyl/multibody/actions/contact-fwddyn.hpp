@@ -330,7 +330,7 @@ struct DifferentialActionDataContactFwdDynamicsTpl
       : Base(model),
         pinocchio(pinocchio::DataTpl<Scalar>(model->get_pinocchio())),
         multibody(
-            &pinocchio, model->get_actuation()->createData(),
+            &pinocchio, model->get_actuation()->createData(&pinocchio),
             boost::make_shared<JointDataAbstract>(
                 model->get_state(), model->get_actuation(), model->get_nu()),
             model->get_contacts()->createData(&pinocchio)),

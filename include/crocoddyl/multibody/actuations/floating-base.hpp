@@ -132,12 +132,12 @@ class ActuationModelFloatingBaseTpl
    *
    * @return the actuation data
    */
-  virtual boost::shared_ptr<Data> createData() {
+  virtual boost::shared_ptr<Data> createData(pinocchio::DataTpl<Scalar>* const pin_data) {
     typedef StateMultibodyTpl<Scalar> StateMultibody;
     boost::shared_ptr<StateMultibody> state =
         boost::static_pointer_cast<StateMultibody>(state_);
     boost::shared_ptr<Data> data =
-        boost::allocate_shared<Data>(Eigen::aligned_allocator<Data>(), this);
+        boost::allocate_shared<Data>(Eigen::aligned_allocator<Data>(), this, pin_data);
     const std::size_t root_joint_id =
         state->get_pinocchio()->existJointName("root_joint")
             ? state->get_pinocchio()->getJointId("root_joint")

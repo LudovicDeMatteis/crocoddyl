@@ -116,9 +116,9 @@ class ActuationModelMultiCopterBaseTpl
     assert_pretty(MatrixXs(data->Mtau).isApprox(Mtau_), "Mtau has wrong value");
   }
 
-  boost::shared_ptr<Data> createData() {
+  boost::shared_ptr<Data> createData(pinocchio::DataTpl<Scalar>* const pin_data) {
     boost::shared_ptr<Data> data =
-        boost::allocate_shared<Data>(Eigen::aligned_allocator<Data>(), this);
+        boost::allocate_shared<Data>(Eigen::aligned_allocator<Data>(), this, pin_data);
     data->dtau_du = tau_f_;
     data->Mtau = Mtau_;
     for (std::size_t i = 0; i < 2; ++i) {

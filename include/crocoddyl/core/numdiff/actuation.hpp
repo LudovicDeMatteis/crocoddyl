@@ -100,7 +100,8 @@ class ActuationModelNumDiffTpl : public ActuationModelAbstractTpl<_Scalar> {
   /**
    * @brief @copydoc Base::createData()
    */
-  virtual boost::shared_ptr<ActuationDataAbstract> createData();
+  virtual boost::shared_ptr<ActuationDataAbstract> createData(
+    pinocchio::DataTpl<Scalar>* const data);
 
   /**
    * @brief Return the original actuation model
@@ -145,8 +146,9 @@ struct ActuationDataNumDiffTpl : public ActuationDataAbstractTpl<_Scalar> {
    * @param model is the object to compute the numerical differentiation from.
    */
   template <template <typename Scalar> class Model>
-  explicit ActuationDataNumDiffTpl(Model<Scalar>* const model)
-      : Base(model),
+  explicit ActuationDataNumDiffTpl(Model<Scalar>* const model,
+                                   pinocchio::DataTpl<Scalar>* const data)
+      : Base(model,data),
         dx(model->get_model()->get_state()->get_ndx()),
         du(model->get_model()->get_nu()),
         xp(model->get_model()->get_state()->get_nx()) {
@@ -155,12 +157,12 @@ struct ActuationDataNumDiffTpl : public ActuationDataAbstractTpl<_Scalar> {
     xp.setZero();
     const std::size_t ndx = model->get_model()->get_state()->get_ndx();
     const std::size_t nu = model->get_model()->get_nu();
-    data_0 = model->get_model()->createData();
+    data_0 = model->get_model()->createData(pinocchio);
     for (std::size_t i = 0; i < ndx; ++i) {
-      data_x.push_back(model->get_model()->createData());
+      data_x.push_back(model->get_model()->createData(pinocchio));
     }
     for (std::size_t i = 0; i < nu; ++i) {
-      data_u.push_back(model->get_model()->createData());
+      data_u.push_back(model->get_model()->createData(pinocchio));
     }
   }
 
@@ -182,6 +184,7 @@ struct ActuationDataNumDiffTpl : public ActuationDataAbstractTpl<_Scalar> {
   using Base::dtau_du;
   using Base::dtau_dx;
   using Base::tau;
+  using Base::pinocchio;
 };
 
 }  // namespace crocoddyl
