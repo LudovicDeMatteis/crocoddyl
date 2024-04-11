@@ -28,9 +28,10 @@ ActuationModelAbstractTpl<Scalar>::~ActuationModelAbstractTpl() {}
 
 template <typename Scalar>
 boost::shared_ptr<ActuationDataAbstractTpl<Scalar> >
-ActuationModelAbstractTpl<Scalar>::createData() {
+ActuationModelAbstractTpl<Scalar>::createData(
+   pinocchio::DataTpl<Scalar>* const data) {
   return boost::allocate_shared<ActuationDataAbstract>(
-      Eigen::aligned_allocator<ActuationDataAbstract>(), this);
+      Eigen::aligned_allocator<ActuationDataAbstract>(), this, data);
 }
 
 template <typename Scalar>
