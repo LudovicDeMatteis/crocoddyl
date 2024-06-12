@@ -7,6 +7,7 @@
 // All rights reserved.
 ///////////////////////////////////////////////////////////////////////////////
 
+#include "contact-6d-loop.hpp"
 namespace crocoddyl {
 
 template <typename Scalar>
@@ -250,9 +251,22 @@ void ContactModelMultipleTpl<Scalar>::updateForce(
         const Eigen::VectorBlock<const VectorXs, Eigen::Dynamic> force_i =
             force.segment(nc, nc_i);
         m_i->contact->updateForce(d_i, force_i);
-        const pinocchio::JointIndex joint =
-            state_->get_pinocchio()->frames[d_i->frame].parent;
-        data->fext[joint] = d_i->fext;
+        ContactModel6DLoopTpl<Scalar>* c =
+            dynamic_cast<ContactModel6DLoopTpl<Scalar>*>(m_i->contact.get());
+        if (c != nullptr){
+          ContactData6DLoopTpl<Scalar>* dc = static_cast<ContactData6DLoopTpl<Scalar>*>(d_i.get());
+          const pinocchio::JointIndex joint1 =
+            c->get_joint1_id();
+          const pinocchio::JointIndex joint2 =
+            c->get_joint2_id();
+          data->fext[joint1] = dc->joint1_f;
+          data->fext[joint2] = dc->joint2_f;
+        }
+        else{
+          const pinocchio::JointIndex joint =
+              state_->get_pinocchio()->frames[d_i->frame].parent;
+          data->fext[joint] = d_i->fext;
+        }
       } else {
         m_i->contact->setZeroForce(d_i);
       }
@@ -271,9 +285,22 @@ void ContactModelMultipleTpl<Scalar>::updateForce(
         const Eigen::VectorBlock<const VectorXs, Eigen::Dynamic> force_i =
             force.segment(nc, nc_i);
         m_i->contact->updateForce(d_i, force_i);
-        const pinocchio::JointIndex joint =
-            state_->get_pinocchio()->frames[d_i->frame].parent;
-        data->fext[joint] = d_i->fext;
+        ContactModel6DLoopTpl<Scalar>* c =
+            dynamic_cast<ContactModel6DLoopTpl<Scalar>*>(m_i->contact.get());
+        if (c != nullptr){
+          ContactData6DLoopTpl<Scalar>* dc = static_cast<ContactData6DLoopTpl<Scalar>*>(d_i.get());
+          const pinocchio::JointIndex joint1 =
+            c->get_joint1_id();
+          const pinocchio::JointIndex joint2 =
+            c->get_joint2_id();
+          data->fext[joint1] = dc->joint1_f;
+          data->fext[joint2] = dc->joint2_f;
+        }
+        else{
+          const pinocchio::JointIndex joint =
+              state_->get_pinocchio()->frames[d_i->frame].parent;
+          data->fext[joint] = d_i->fext;
+        }
         nc += nc_i;
       } else {
         m_i->contact->setZeroForce(d_i);

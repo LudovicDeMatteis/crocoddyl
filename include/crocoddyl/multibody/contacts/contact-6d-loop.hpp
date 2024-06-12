@@ -128,6 +128,10 @@ class ContactModel6DLoopTpl : public ContactModelAbstractTpl<_Scalar> {
       pinocchio::DataTpl<Scalar>* const data);
 
 // TODO Add getters and setters for the reference frame placements and the reference joints placements
+  const int get_joint1_id() const;
+  const SE3& get_joint1_placement() const;
+  const int get_joint2_id() const;
+  const SE3& get_joint2_placement() const;
 
   /**
    * @brief Return the Baumgarte stabilization gains
@@ -220,6 +224,9 @@ struct ContactData6DLoopTpl : public ContactDataAbstractTpl<_Scalar> {
     f1af1 = Motion::Zero();
     f2af2 = Motion::Zero();
     f1af2 = Motion::Zero();
+    //
+    joint1_f = Force::Zero();
+    joint2_f = Force::Zero();
   }
 
   using Base::a0;
@@ -261,6 +268,9 @@ struct ContactData6DLoopTpl : public ContactDataAbstractTpl<_Scalar> {
   Motion f1af1;
   Motion f2af2;
   Motion f1af2;
+  // Force related data
+  Force joint1_f;
+  Force joint2_f;
 
 };
 
