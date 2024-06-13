@@ -31,10 +31,13 @@ class ContactModel6DLoopTpl : public ContactModelAbstractTpl<_Scalar> {
   typedef StateMultibodyTpl<Scalar> StateMultibody;
   typedef ContactDataAbstractTpl<Scalar> ContactDataAbstract;
   typedef pinocchio::SE3Tpl<Scalar> SE3;
+  typedef pinocchio::ForceTpl<Scalar> Force;
   typedef typename MathBase::Vector2s Vector2s;
   typedef typename MathBase::Vector3s Vector3s;
   typedef typename MathBase::VectorXs VectorXs;
   typedef typename MathBase::Matrix3s Matrix3s;
+  typedef typename MathBase::Matrix6s Matrix6s;
+
 
   /**
    * @brief Initialize the 6d contact model from contact frames
