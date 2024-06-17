@@ -274,6 +274,9 @@ struct ContactData6DLoopTpl : public ContactDataAbstractTpl<_Scalar> {
   // Force related data
   Force joint1_f;
   Force joint2_f;
+  Force f_local;
+
+  Matrix6s f_cross;
 
 };
 

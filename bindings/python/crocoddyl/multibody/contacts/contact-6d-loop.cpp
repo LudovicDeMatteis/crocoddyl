@@ -70,6 +70,26 @@ void exposeContact6DLoop() {
            ":param data: Pinocchio data\n"
            ":return contact data.")
       .add_property(
+          "joint1_id",
+          bp::make_function(&ContactModel6DLoop::get_joint1_id,
+                            bp::return_value_policy<bp::return_by_value>()),
+          "reference joint id of the first contact frame")
+      .add_property(
+          "joint1_placement",
+          bp::make_function(&ContactModel6DLoop::get_joint1_placement,
+                            bp::return_value_policy<bp::return_by_value>()),
+          "Placement of the first contact frame")
+      .add_property(
+          "joint2_id",
+          bp::make_function(&ContactModel6DLoop::get_joint2_id,
+                            bp::return_value_policy<bp::return_by_value>()),
+          "reference joint id of the second contact frame")
+      .add_property(
+          "joint2_placement",
+          bp::make_function(&ContactModel6DLoop::get_joint2_placement,
+                            bp::return_value_policy<bp::return_by_value>()),
+          "Placement of the second contact frame")
+      .add_property(
           "gains",
           bp::make_function(&ContactModel6DLoop::get_gains,
                             bp::return_value_policy<bp::return_by_value>()),
@@ -165,7 +185,7 @@ void exposeContact6DLoop() {
                                     bp::return_internal_reference<>()),
                     "Jacobian of the first joint in the joint frame")
         .add_property("j2Jj2",
-                    bp::make_getter(&ContactData6DLoop::f2Jf2,
+                    bp::make_getter(&ContactData6DLoop::j2Jj2,
                                     bp::return_internal_reference<>()),
                     "Jacobian of the second contact frame")
         .add_property("f1vf1",
@@ -192,6 +212,18 @@ void exposeContact6DLoop() {
                     bp::make_getter(&ContactData6DLoop::f1af2,
                                     bp::return_internal_reference<>()),
                     "Acceleration of the second contact frame in the first contact frame")
+          .add_property("f_cross",
+                    bp::make_getter(&ContactData6DLoop::f_cross,
+                                    bp::return_internal_reference<>()),
+                    "Cross product matrix")
+        .add_property("joint1_f",
+                    bp::make_getter(&ContactData6DLoop::joint1_f,
+                                    bp::return_internal_reference<>()),
+                    "Force at the first joint")
+        .add_property("joint2_f",
+                    bp::make_getter(&ContactData6DLoop::joint2_f,
+                                    bp::return_internal_reference<>()),
+                    "Force at the second joint")
       .def(CopyableVisitor<ContactData6DLoop>());
 }
 
