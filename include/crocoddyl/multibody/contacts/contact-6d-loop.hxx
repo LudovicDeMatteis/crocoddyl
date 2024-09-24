@@ -108,6 +108,20 @@ void ContactModel6DLoopTpl<Scalar>::calcDiff(
     throw_pretty("Baumgarte stabilization is not implemented yet");
   }
   
+  if(joint1_id_ > 0){
+    d->f1af1 = joint1_placement_.actInv(d->pinocchio->a[joint1_id_]);
+  }
+  else{
+    d->f1af1.setZero();
+  }
+  if(joint2_id_ > 0){
+    d->f2af2 = joint2_placement_.actInv(d->pinocchio->a[joint2_id_]);
+  }
+  else{
+    d->f2af2.setZero();
+  }
+  d->f1af2 = d->f1Mf2.act(d->f2af2);
+
   const std::size_t nv = state_->get_nv();
   pinocchio::getJointAccelerationDerivatives(
       *state_->get_pinocchio().get(), *d->pinocchio, joint1_id_, pinocchio::LOCAL,
@@ -138,25 +152,24 @@ void ContactModel6DLoopTpl<Scalar>::updateForce(
                  << "lambda has wrong dimension (it should be 6)");
   }
   Data* d = static_cast<Data*>(data.get());
-  d->f = pinocchio::ForceTpl<Scalar>(force);
+  d->f = pinocchio::ForceTpl<Scalar>(-force);
   switch(type_){
     case pinocchio::ReferenceFrame::LOCAL:
     {
       data->fext = joint1_placement_.act(data->f);
-      d->joint1_f = data->fext;
-      d->joint2_f = (joint2_placement_ * d->f1Mf2.inverse()).act(- data->f);
+      d->joint1_f = - joint1_placement_.act(data->f);
+      d->joint2_f = (joint2_placement_ * d->f1Mf2.inverse()).act(data->f);
 
       data->dtau_dq.setZero();
-      Force f_local = (joint2_placement_ * d->f1Mf2.inverse()).act(data->f);
-      Matrix6s f_cross;
-      f_cross.setZero();
-      f_cross.topRightCorner(3,3) = pinocchio::skew(f_local.linear());
-      f_cross.bottomLeftCorner(3,3) = pinocchio::skew(f_local.linear());
-      f_cross.bottomRightCorner(3,3) = pinocchio::skew(f_local.angular());
+      
+      d->f_cross.setZero();
+      d->f_cross.topRightCorner(3,3) = pinocchio::skew(d->joint2_f.linear());
+      d->f_cross.bottomLeftCorner(3,3) = pinocchio::skew(d->joint2_f.linear());
+      d->f_cross.bottomRightCorner(3,3) = pinocchio::skew(d->joint2_f.angular());
 
       SE3 j2Mj1 = joint2_placement_.act(d->f1Mf2.actInv(joint1_placement_.inverse()));
 
-      data->dtau_dq = d->j2Jj2.transpose() * (f_cross * (d->j2Jj2 - j2Mj1.toActionMatrix()*d->j1Jj1));
+      data->dtau_dq = d->j2Jj2.transpose() * (- d->f_cross * (d->j2Jj2 - j2Mj1.toActionMatrix()*d->j1Jj1));
       break;
     }
     case pinocchio::ReferenceFrame::WORLD:

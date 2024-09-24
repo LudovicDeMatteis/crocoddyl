@@ -426,8 +426,6 @@ void ContactModelMultipleTpl<Scalar>::updateRneaDiff(
     assert_pretty(it_m->first == it_d->first,
                   "it doesn't match the contact name between data and model");
     if (m_i->active) {
-      std::cout << "Adding dtau_dq" << std::endl;
-      std::cout << d_i->dtau_dq << std::endl;
       pinocchio.dtau_dq += d_i->dtau_dq;
     }
   }
