@@ -49,7 +49,6 @@ ContactModel6DLoopTpl<Scalar>::ContactModel6DLoopTpl(
     : Base(state, pinocchio::ReferenceFrame::LOCAL, 6, nu),
       gains_(gains), joint1_id_(joint1_id), joint2_id_(joint2_id),
       joint1_placement_(joint1_placement), joint2_placement_(joint2_placement), is_frame_(false) {
-  std::cout << "Defining contact closed loop from joints\n" << std::endl;
 }
 
 template <typename Scalar>
@@ -62,16 +61,13 @@ void ContactModel6DLoopTpl<Scalar>::calc(
   Data* d = static_cast<Data*>(data.get());
   pinocchio::updateFramePlacements<Scalar>(*state_->get_pinocchio().get(),
                                           *d->pinocchio);
-  std::cout << "Calculating contact 6D loop\n" << std::endl;
   d->j1Xf1 = joint1_placement_.toActionMatrix();
   d->j2Xf2 = joint2_placement_.toActionMatrix();  
 
-  std::cout << "Calculating contact Jacobian 6D loop\n" << std::endl;
   pinocchio::getJointJacobian(*state_->get_pinocchio().get(), *d->pinocchio,
                             joint1_id_, pinocchio::LOCAL, d->j1Jj1);
   pinocchio::getJointJacobian(*state_->get_pinocchio().get(), *d->pinocchio,
                             joint2_id_, pinocchio::LOCAL, d->j2Jj2);
-  std::cout << "Calculating contact Jacobian transforms 6D loop\n" << std::endl;
   d->f1Jf1 = d->j1Xf1.inverse() * d->j1Jj1;
   d->f2Jf2 = d->j2Xf2.inverse() * d->j2Jj2;
 
@@ -82,7 +78,6 @@ void ContactModel6DLoopTpl<Scalar>::calc(
 
   d->Jc = d->f1Jf1 - d->f1Xf2 * d->f2Jf2;
   // Compute the acceleration drift
-  std::cout << "Calculating contact acceleration drift 6D loop\n" << std::endl;
   if(joint1_id_ > 0){
     d->f1vf1 = joint1_placement_.actInv(d->pinocchio->v[joint1_id_]);
     d->f1af1 = joint1_placement_.actInv(d->pinocchio->a[joint1_id_]);
@@ -99,7 +94,6 @@ void ContactModel6DLoopTpl<Scalar>::calc(
     d->f2vf2.setZero();
     d->f2af2.setZero();
   }
-  std::cout << "Calculated contact acceleration drift 6D loop\n" << std::endl;
   d->f1vf2 = d->f1Mf2.act(d->f2vf2);
   d->f1af2 = d->f1Mf2.act(d->f2af2);
   d->a0 = (d->f1af1 - d->f1Mf2.act(d->f2af2) + d->f1vf1.cross(d->f1vf2)).toVector();
