@@ -131,7 +131,7 @@ void ContactModel6DLoopTpl<Scalar>::calcDiff(
 
   d->da0_dx.leftCols(nv) = d->da0_dq_t1 - d->da0_dq_t2 + d->da0_dq_t3; // This should be da0_dq
   d->da0_dx.rightCols(nv) = joint1_placement_.toActionMatrixInverse() * d->a1_partial_dv
-                            - d->f1Xf2 * (joint1_placement_.toActionMatrixInverse() * d->a2_partial_dv) 
+                            - d->f1Xf2 * (joint2_placement_.toActionMatrixInverse() * d->a2_partial_dv) 
                             - d->f1vf2.toActionMatrix() * d->f1Jf1
                             + d->f1vf1.toActionMatrix() * d->f1Xf2 * d->f2Jf2; // This should be da0_dv
 }
@@ -142,6 +142,23 @@ void ContactModel6DLoopTpl<Scalar>::updateForce(
   if (force.size() != 6) {
     throw_pretty("Invalid argument: "
                  << "lambda has wrong dimension (it should be 6)");
+  }
+  Data* d = static_cast<Data*>(data.get());
+  d->f = pinocchio::ForceTpl<Scalar>(force);
+  switch(type_){
+    case pinocchio::ReferenceFrame::LOCAL:
+      data->fext = joint1_placement_.act(data->f);
+      d->joint1_f = data->fext;
+      d->joint2_f = joint2_placement_.actInv(-data->f);
+
+      data->dtau_dq.setZero();
+      break;
+    case pinocchio::ReferenceFrame::WORLD:
+      throw_pretty("Reference frame WORLD is not implemented yet");
+      break;
+    case pinocchio::ReferenceFrame::LOCAL_WORLD_ALIGNED:
+      throw_pretty("Reference frame LOCAL_WORLD_ALIGNED is not implemented yet");
+      break;
   }
 }
 
@@ -163,6 +180,28 @@ template <typename Scalar>
 const typename MathBaseTpl<Scalar>::Vector2s&
 ContactModel6DLoopTpl<Scalar>::get_gains() const {
   return gains_;
+}
+
+template <typename Scalar>
+const int ContactModel6DLoopTpl<Scalar>::get_joint1_id() const {
+  return joint1_id_;
+}
+
+template <typename Scalar>
+const int ContactModel6DLoopTpl<Scalar>::get_joint2_id() const {
+  return joint2_id_;
+}
+
+template <typename Scalar>
+const typename pinocchio::SE3Tpl<Scalar>&
+ContactModel6DLoopTpl<Scalar>::get_joint1_placement() const {
+  return joint1_placement_;
+}
+
+template <typename Scalar>
+const typename pinocchio::SE3Tpl<Scalar>&
+ContactModel6DLoopTpl<Scalar>::get_joint2_placement() const {
+  return joint2_placement_;
 }
 
 }  // namespace crocoddyl
