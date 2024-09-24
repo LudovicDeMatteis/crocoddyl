@@ -141,12 +141,24 @@ void ContactModel6DLoopTpl<Scalar>::updateForce(
   d->f = pinocchio::ForceTpl<Scalar>(force);
   switch(type_){
     case pinocchio::ReferenceFrame::LOCAL:
+    {
       data->fext = joint1_placement_.act(data->f);
       d->joint1_f = data->fext;
-      d->joint2_f = joint2_placement_.actInv(-data->f);
+      d->joint2_f = (joint2_placement_ * d->f1Mf2.inverse()).act(- data->f);
 
       data->dtau_dq.setZero();
+      Force f_local = (joint2_placement_ * d->f1Mf2.inverse()).act(data->f);
+      Matrix6s f_cross;
+      f_cross.setZero();
+      f_cross.topRightCorner(3,3) = pinocchio::skew(f_local.linear());
+      f_cross.bottomLeftCorner(3,3) = pinocchio::skew(f_local.linear());
+      f_cross.bottomRightCorner(3,3) = pinocchio::skew(f_local.angular());
+
+      SE3 j2Mj1 = joint2_placement_.act(d->f1Mf2.actInv(joint1_placement_.inverse()));
+
+      data->dtau_dq = d->j2Jj2.transpose() * (f_cross * (d->j2Jj2 - j2Mj1.toActionMatrix()*d->j1Jj1));
       break;
+    }
     case pinocchio::ReferenceFrame::WORLD:
       throw_pretty("Reference frame WORLD is not implemented yet");
       break;
