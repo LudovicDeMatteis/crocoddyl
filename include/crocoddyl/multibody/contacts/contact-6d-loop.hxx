@@ -99,7 +99,7 @@ void ContactModel6DLoopTpl<Scalar>::calc(
   d->a0 = (d->f1af1 - d->f1Mf2.act(d->f2af2) + d->f1vf1.cross(d->f1vf2)).toVector();
 
   if (gains_[0] != 0.){
-    d->a0 += gains_[0] * pinocchio::log6(d->f1Mf2).toVector();
+    d->a0 += gains_[0] * (-pinocchio::log6(d->f1Mf2).toVector());
   }
   if (gains_[1] != 0.){
     d->a0 += gains_[1] * (d->f1vf1 - d->f1vf2).toVector();
@@ -147,8 +147,14 @@ void ContactModel6DLoopTpl<Scalar>::calcDiff(
                             + d->f1vf1.toActionMatrix() * d->f1Xf2 * d->f2Jf2; // This should be da0_dv
 
   if(gains_[0] != 0.){
+    // ! This is some code double computation => should add variables to data ?
+    SE3 oMf1 = d->pinocchio->oMi[joint1_id_].act(joint1_placement_);
+    SE3 oMf2 = d->pinocchio->oMi[joint2_id_].act(joint2_placement_);
+
     // Should add the derivatives of the log6
-    throw_pretty("Baumgarte stabilization Kp is not implemented yet");
+    Matrix6s f1Mf2_log6;
+    pinocchio::Jlog6(d->f1Mf2, f1Mf2_log6);
+    d->da0_dx.leftCols(nv) += gains_[0] * (-f1Mf2_log6 * (-oMf2.toActionMatrixInverse() * oMf1.toActionMatrix() * d->f1Jf1 + d->f2Jf2));
   }
   if(gains_[1] != 0.){
     // Should add the derivatives of the velocity difference
