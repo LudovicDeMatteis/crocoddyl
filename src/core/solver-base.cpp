@@ -1,7 +1,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 // BSD 3-Clause License
 //
-// Copyright (C) 2019-2023, LAAS-CNRS, University of Edinburgh,
+// Copyright (C) 2019-2024, LAAS-CNRS, University of Edinburgh,
 //                          Heriot-Watt University, University of Oxford
 // Copyright note valid unless otherwise stated in individual files.
 // All rights reserved.
@@ -47,73 +47,79 @@ SolverAbstract::SolverAbstract(boost::shared_ptr<ShootingProblem> problem)
   // Allocate common data
   const std::size_t ndx = problem_->get_ndx();
   const std::size_t T = problem_->get_T();
+  const std::size_t ng_T = problem_->get_terminalModel()->get_ng_T();
   xs_.resize(T + 1);
   us_.resize(T);
   fs_.resize(T + 1);
+  g_adj_.resize(T + 1);
   const std::vector<boost::shared_ptr<ActionModelAbstract> >& models =
       problem_->get_runningModels();
   for (std::size_t t = 0; t < T; ++t) {
     const boost::shared_ptr<ActionModelAbstract>& model = models[t];
     const std::size_t nu = model->get_nu();
+    const std::size_t ng = model->get_ng();
     xs_[t] = model->get_state()->zero();
     us_[t] = Eigen::VectorXd::Zero(nu);
     fs_[t] = Eigen::VectorXd::Zero(ndx);
+    g_adj_[t] = Eigen::VectorXd::Zero(ng);
   }
   xs_.back() = problem_->get_terminalModel()->get_state()->zero();
   fs_.back() = Eigen::VectorXd::Zero(ndx);
+  g_adj_.back() = Eigen::VectorXd::Zero(ng_T);
 }
 
 SolverAbstract::~SolverAbstract() {}
 
 void SolverAbstract::resizeData() {
+  START_PROFILER("SolverAbstract::resizeData");
   const std::size_t T = problem_->get_T();
+  const std::size_t ng_T = problem_->get_terminalModel()->get_ng_T();
   const std::vector<boost::shared_ptr<ActionModelAbstract> >& models =
       problem_->get_runningModels();
   for (std::size_t t = 0; t < T; ++t) {
     const boost::shared_ptr<ActionModelAbstract>& model = models[t];
     const std::size_t nu = model->get_nu();
+    const std::size_t ng = model->get_ng();
     us_[t].conservativeResize(nu);
+    g_adj_[t].conservativeResize(ng);
   }
+
+  g_adj_.back().conservativeResize(ng_T);
+
+  STOP_PROFILER("SolverAbstract::resizeData");
 }
 
 double SolverAbstract::computeDynamicFeasibility() {
   tmp_feas_ = 0.;
-  if (!is_feasible_) {
-    const std::size_t T = problem_->get_T();
-    const Eigen::VectorXd& x0 = problem_->get_x0();
-    const std::vector<boost::shared_ptr<ActionModelAbstract> >& models =
-        problem_->get_runningModels();
-    const std::vector<boost::shared_ptr<ActionDataAbstract> >& datas =
-        problem_->get_runningDatas();
+  const std::size_t T = problem_->get_T();
+  const Eigen::VectorXd& x0 = problem_->get_x0();
+  const std::vector<boost::shared_ptr<ActionModelAbstract> >& models =
+      problem_->get_runningModels();
+  const std::vector<boost::shared_ptr<ActionDataAbstract> >& datas =
+      problem_->get_runningDatas();
 
-    models[0]->get_state()->diff(xs_[0], x0, fs_[0]);
+  models[0]->get_state()->diff(xs_[0], x0, fs_[0]);
 #ifdef CROCODDYL_WITH_MULTITHREADING
 #pragma omp parallel for num_threads(problem_->get_nthreads())
 #endif
-    for (std::size_t t = 0; t < T; ++t) {
-      const boost::shared_ptr<ActionModelAbstract>& m = models[t];
-      const boost::shared_ptr<ActionDataAbstract>& d = datas[t];
-      m->get_state()->diff(xs_[t + 1], d->xnext, fs_[t + 1]);
-    }
-    switch (feasnorm_) {
-      case LInf:
-        tmp_feas_ = std::max(tmp_feas_, fs_[0].lpNorm<Eigen::Infinity>());
-        for (std::size_t t = 0; t < T; ++t) {
-          tmp_feas_ = std::max(tmp_feas_, fs_[t + 1].lpNorm<Eigen::Infinity>());
-        }
-        break;
-      case L1:
-        tmp_feas_ = fs_[0].lpNorm<1>();
-        for (std::size_t t = 0; t < T; ++t) {
-          tmp_feas_ += fs_[t + 1].lpNorm<1>();
-        }
-        break;
-    }
-  } else if (!was_feasible_) {  // closing the gaps
-    for (std::vector<Eigen::VectorXd>::iterator it = fs_.begin();
-         it != fs_.end(); ++it) {
-      it->setZero();
-    }
+  for (std::size_t t = 0; t < T; ++t) {
+    const boost::shared_ptr<ActionModelAbstract>& m = models[t];
+    const boost::shared_ptr<ActionDataAbstract>& d = datas[t];
+    m->get_state()->diff(xs_[t + 1], d->xnext, fs_[t + 1]);
+  }
+  switch (feasnorm_) {
+    case LInf:
+      tmp_feas_ = std::max(tmp_feas_, fs_[0].lpNorm<Eigen::Infinity>());
+      for (std::size_t t = 0; t < T; ++t) {
+        tmp_feas_ = std::max(tmp_feas_, fs_[t + 1].lpNorm<Eigen::Infinity>());
+      }
+      break;
+    case L1:
+      tmp_feas_ = fs_[0].lpNorm<1>();
+      for (std::size_t t = 0; t < T; ++t) {
+        tmp_feas_ += fs_[t + 1].lpNorm<1>();
+      }
+      break;
   }
   return tmp_feas_;
 }
@@ -125,28 +131,44 @@ double SolverAbstract::computeInequalityFeasibility() {
       problem_->get_runningModels();
   const std::vector<boost::shared_ptr<ActionDataAbstract> >& datas =
       problem_->get_runningDatas();
+
   switch (feasnorm_) {
     case LInf:
       for (std::size_t t = 0; t < T; ++t) {
         if (models[t]->get_ng() > 0) {
-          tmp_feas_ =
-              std::max(tmp_feas_, datas[t]->g.lpNorm<Eigen::Infinity>());
+          g_adj_[t] = datas[t]
+                          ->g.cwiseMax(models[t]->get_g_lb())
+                          .cwiseMin(models[t]->get_g_ub());
+          tmp_feas_ = std::max(
+              tmp_feas_, (datas[t]->g - g_adj_[t]).lpNorm<Eigen::Infinity>());
         }
       }
-      if (problem_->get_terminalModel()->get_ng() > 0) {
-        tmp_feas_ =
-            std::max(tmp_feas_,
-                     problem_->get_terminalData()->g.lpNorm<Eigen::Infinity>());
+      if (problem_->get_terminalModel()->get_ng_T() > 0) {
+        g_adj_.back() =
+            problem_->get_terminalData()
+                ->g.cwiseMax(problem_->get_terminalModel()->get_g_lb())
+                .cwiseMin(problem_->get_terminalModel()->get_g_ub());
+        tmp_feas_ += (problem_->get_terminalData()->g - g_adj_.back())
+                         .lpNorm<Eigen::Infinity>();
       }
       break;
     case L1:
       for (std::size_t t = 0; t < T; ++t) {
         if (models[t]->get_ng() > 0) {
-          tmp_feas_ += datas[t]->g.lpNorm<1>();
+          g_adj_[t] = datas[t]
+                          ->g.cwiseMax(models[t]->get_g_lb())
+                          .cwiseMin(models[t]->get_g_ub());
+          tmp_feas_ =
+              std::max(tmp_feas_, (datas[t]->g - g_adj_[t]).lpNorm<1>());
         }
       }
-      if (problem_->get_terminalModel()->get_ng() > 0) {
-        tmp_feas_ += problem_->get_terminalData()->g.lpNorm<1>();
+      if (problem_->get_terminalModel()->get_ng_T() > 0) {
+        g_adj_.back() =
+            problem_->get_terminalData()
+                ->g.cwiseMax(problem_->get_terminalModel()->get_g_lb())
+                .cwiseMin(problem_->get_terminalModel()->get_g_ub());
+        tmp_feas_ +=
+            (problem_->get_terminalData()->g - g_adj_.back()).lpNorm<1>();
       }
       break;
   }
@@ -168,7 +190,7 @@ double SolverAbstract::computeEqualityFeasibility() {
               std::max(tmp_feas_, datas[t]->h.lpNorm<Eigen::Infinity>());
         }
       }
-      if (problem_->get_terminalModel()->get_nh() > 0) {
+      if (problem_->get_terminalModel()->get_nh_T() > 0) {
         tmp_feas_ =
             std::max(tmp_feas_,
                      problem_->get_terminalData()->h.lpNorm<Eigen::Infinity>());
@@ -180,7 +202,7 @@ double SolverAbstract::computeEqualityFeasibility() {
           tmp_feas_ += datas[t]->h.lpNorm<1>();
         }
       }
-      if (problem_->get_terminalModel()->get_nh() > 0) {
+      if (problem_->get_terminalModel()->get_nh_T() > 0) {
         tmp_feas_ += problem_->get_terminalData()->h.lpNorm<1>();
       }
       break;
@@ -347,8 +369,8 @@ std::size_t SolverAbstract::get_iter() const { return iter_; }
 void SolverAbstract::set_xs(const std::vector<Eigen::VectorXd>& xs) {
   const std::size_t T = problem_->get_T();
   if (xs.size() != T + 1) {
-    throw_pretty("Invalid argument: "
-                 << "xs list has to be of length " + std::to_string(T + 1));
+    throw_pretty("Invalid argument: " << "xs list has to be of length " +
+                                             std::to_string(T + 1));
   }
 
   const std::size_t nx = problem_->get_nx();
@@ -373,8 +395,8 @@ void SolverAbstract::set_xs(const std::vector<Eigen::VectorXd>& xs) {
 void SolverAbstract::set_us(const std::vector<Eigen::VectorXd>& us) {
   const std::size_t T = problem_->get_T();
   if (us.size() != T) {
-    throw_pretty("Invalid argument: "
-                 << "us list has to be of length " + std::to_string(T));
+    throw_pretty("Invalid argument: " << "us list has to be of length " +
+                                             std::to_string(T));
   }
 
   const std::vector<boost::shared_ptr<ActionModelAbstract> >& models =
@@ -394,16 +416,14 @@ void SolverAbstract::set_us(const std::vector<Eigen::VectorXd>& us) {
 
 void SolverAbstract::set_preg(const double preg) {
   if (preg < 0.) {
-    throw_pretty("Invalid argument: "
-                 << "preg value has to be positive.");
+    throw_pretty("Invalid argument: " << "preg value has to be positive.");
   }
   preg_ = preg;
 }
 
 void SolverAbstract::set_dreg(const double dreg) {
   if (dreg < 0.) {
-    throw_pretty("Invalid argument: "
-                 << "dreg value has to be positive.");
+    throw_pretty("Invalid argument: " << "dreg value has to be positive.");
   }
   dreg_ = dreg;
 }
@@ -412,8 +432,7 @@ DEPRECATED(
     "Use set_preg for gettting the primal-variable regularization",
     void SolverAbstract::set_xreg(const double xreg) {
       if (xreg < 0.) {
-        throw_pretty("Invalid argument: "
-                     << "xreg value has to be positive.");
+        throw_pretty("Invalid argument: " << "xreg value has to be positive.");
       }
       xreg_ = xreg;
       preg_ = xreg;
@@ -423,8 +442,7 @@ DEPRECATED(
     "Use set_preg for gettting the primal-variable regularization",
     void SolverAbstract::set_ureg(const double ureg) {
       if (ureg < 0.) {
-        throw_pretty("Invalid argument: "
-                     << "ureg value has to be positive.");
+        throw_pretty("Invalid argument: " << "ureg value has to be positive.");
       }
       ureg_ = ureg;
       preg_ = ureg;
@@ -432,24 +450,22 @@ DEPRECATED(
 
 void SolverAbstract::set_th_acceptstep(const double th_acceptstep) {
   if (0. >= th_acceptstep || th_acceptstep > 1) {
-    throw_pretty("Invalid argument: "
-                 << "th_acceptstep value should between 0 and 1.");
+    throw_pretty(
+        "Invalid argument: " << "th_acceptstep value should between 0 and 1.");
   }
   th_acceptstep_ = th_acceptstep;
 }
 
 void SolverAbstract::set_th_stop(const double th_stop) {
   if (th_stop <= 0.) {
-    throw_pretty("Invalid argument: "
-                 << "th_stop value has to higher than 0.");
+    throw_pretty("Invalid argument: " << "th_stop value has to higher than 0.");
   }
   th_stop_ = th_stop;
 }
 
 void SolverAbstract::set_th_gaptol(const double th_gaptol) {
   if (0. > th_gaptol) {
-    throw_pretty("Invalid argument: "
-                 << "th_gaptol value has to be positive.");
+    throw_pretty("Invalid argument: " << "th_gaptol value has to be positive.");
   }
   th_gaptol_ = th_gaptol;
 }

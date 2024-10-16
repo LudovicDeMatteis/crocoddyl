@@ -35,15 +35,16 @@ class ConstraintModelAbstract_wrap
 
   ConstraintModelAbstract_wrap(boost::shared_ptr<StateAbstract> state,
                                const std::size_t nu, const std::size_t ng,
-                               const std::size_t nh)
-      : ConstraintModelAbstract(state, nu, ng, nh),
+                               const std::size_t nh, const bool T_const = true)
+      : ConstraintModelAbstract(state, nu, ng, nh, T_const),
         bp::wrapper<ConstraintModelAbstract>() {
     unone_ = NAN * MathBase::VectorXs::Ones(nu);
   }
 
   ConstraintModelAbstract_wrap(boost::shared_ptr<StateAbstract> state,
-                               const std::size_t ng, const std::size_t nh)
-      : ConstraintModelAbstract(state, ng, nh) {
+                               const std::size_t ng, const std::size_t nh,
+                               const bool T_const = true)
+      : ConstraintModelAbstract(state, ng, nh, T_const) {
     unone_ = NAN * MathBase::VectorXs::Ones(nu_);
   }
 
@@ -51,14 +52,14 @@ class ConstraintModelAbstract_wrap
             const Eigen::Ref<const Eigen::VectorXd>& x,
             const Eigen::Ref<const Eigen::VectorXd>& u) {
     if (static_cast<std::size_t>(x.size()) != state_->get_nx()) {
-      throw_pretty("Invalid argument: "
-                   << "x has wrong dimension (it should be " +
-                          std::to_string(state_->get_nx()) + ")");
+      throw_pretty(
+          "Invalid argument: " << "x has wrong dimension (it should be " +
+                                      std::to_string(state_->get_nx()) + ")");
     }
     if (static_cast<std::size_t>(u.size()) != nu_) {
-      throw_pretty("Invalid argument: "
-                   << "u has wrong dimension (it should be " +
-                          std::to_string(nu_) + ")");
+      throw_pretty(
+          "Invalid argument: " << "u has wrong dimension (it should be " +
+                                      std::to_string(nu_) + ")");
     }
     if (std::isnan(u.lpNorm<Eigen::Infinity>())) {
       return bp::call<void>(this->get_override("calc").ptr(), data,
@@ -73,14 +74,14 @@ class ConstraintModelAbstract_wrap
                 const Eigen::Ref<const Eigen::VectorXd>& x,
                 const Eigen::Ref<const Eigen::VectorXd>& u) {
     if (static_cast<std::size_t>(x.size()) != state_->get_nx()) {
-      throw_pretty("Invalid argument: "
-                   << "x has wrong dimension (it should be " +
-                          std::to_string(state_->get_nx()) + ")");
+      throw_pretty(
+          "Invalid argument: " << "x has wrong dimension (it should be " +
+                                      std::to_string(state_->get_nx()) + ")");
     }
     if (static_cast<std::size_t>(u.size()) != nu_) {
-      throw_pretty("Invalid argument: "
-                   << "u has wrong dimension (it should be " +
-                          std::to_string(nu_) + ")");
+      throw_pretty(
+          "Invalid argument: " << "u has wrong dimension (it should be " +
+                                      std::to_string(nu_) + ")");
     }
     if (std::isnan(u.lpNorm<Eigen::Infinity>())) {
       return bp::call<void>(this->get_override("calcDiff").ptr(), data,

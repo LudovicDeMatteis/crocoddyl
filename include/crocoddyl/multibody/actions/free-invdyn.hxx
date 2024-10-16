@@ -1,7 +1,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 // BSD 3-Clause License
 //
-// Copyright (C) 2021-2022, Heriot-Watt University, University of Edinburgh
+// Copyright (C) 2021-2024, Heriot-Watt University, University of Edinburgh
 // Copyright note valid unless otherwise stated in individual files.
 // All rights reserved.
 ///////////////////////////////////////////////////////////////////////////////
@@ -40,7 +40,8 @@ DifferentialActionModelFreeInvDynamicsTpl<Scalar>::
         boost::shared_ptr<CostModelSum> costs,
         boost::shared_ptr<ConstraintModelManager> constraints)
     : Base(state, state->get_nv(), costs->get_nr(), constraints->get_ng(),
-           constraints->get_nh() + state->get_nv() - actuation->get_nu()),
+           constraints->get_nh() + state->get_nv() - actuation->get_nu(),
+           constraints->get_ng_T(), constraints->get_nh_T()),
       actuation_(actuation),
       costs_(costs),
       constraints_(constraints),
@@ -72,12 +73,13 @@ void DifferentialActionModelFreeInvDynamicsTpl<Scalar>::init(
 
   if (state->get_nv() - actuation_->get_nu() > 0) {
     constraints_->addConstraint(
-        "tau",
-        boost::make_shared<ConstraintModelResidual>(
-            state_, boost::make_shared<
-                        typename DifferentialActionModelFreeInvDynamicsTpl<
-                            Scalar>::ResidualModelActuation>(
-                        state, actuation_->get_nu())));
+        "tau", boost::make_shared<ConstraintModelResidual>(
+                   state_,
+                   boost::make_shared<
+                       typename DifferentialActionModelFreeInvDynamicsTpl<
+                           Scalar>::ResidualModelActuation>(
+                       state, actuation_->get_nu()),
+                   false));
   }
 }
 
@@ -90,14 +92,14 @@ void DifferentialActionModelFreeInvDynamicsTpl<Scalar>::calc(
     const boost::shared_ptr<DifferentialActionDataAbstract>& data,
     const Eigen::Ref<const VectorXs>& x, const Eigen::Ref<const VectorXs>& u) {
   if (static_cast<std::size_t>(x.size()) != state_->get_nx()) {
-    throw_pretty("Invalid argument: "
-                 << "x has wrong dimension (it should be " +
-                        std::to_string(state_->get_nx()) + ")");
+    throw_pretty(
+        "Invalid argument: " << "x has wrong dimension (it should be " +
+                                    std::to_string(state_->get_nx()) + ")");
   }
   if (static_cast<std::size_t>(u.size()) != nu_) {
-    throw_pretty("Invalid argument: "
-                 << "u has wrong dimension (it should be " +
-                        std::to_string(nu_) + ")");
+    throw_pretty(
+        "Invalid argument: " << "u has wrong dimension (it should be " +
+                                    std::to_string(nu_) + ")");
   }
   Data* d = static_cast<Data*>(data.get());
   const std::size_t nv = state_->get_nv();
@@ -124,9 +126,9 @@ void DifferentialActionModelFreeInvDynamicsTpl<Scalar>::calc(
     const boost::shared_ptr<DifferentialActionDataAbstract>& data,
     const Eigen::Ref<const VectorXs>& x) {
   if (static_cast<std::size_t>(x.size()) != state_->get_nx()) {
-    throw_pretty("Invalid argument: "
-                 << "x has wrong dimension (it should be " +
-                        std::to_string(state_->get_nx()) + ")");
+    throw_pretty(
+        "Invalid argument: " << "x has wrong dimension (it should be " +
+                                    std::to_string(state_->get_nx()) + ")");
   }
 
   Data* d = static_cast<Data*>(data.get());
@@ -139,7 +141,7 @@ void DifferentialActionModelFreeInvDynamicsTpl<Scalar>::calc(
 
   costs_->calc(d->costs, x);
   d->cost = d->costs->cost;
-  d->constraints->resize(this, d);
+  d->constraints->resize(this, d, false);
   constraints_->calc(d->constraints, x);
 }
 
@@ -148,14 +150,14 @@ void DifferentialActionModelFreeInvDynamicsTpl<Scalar>::calcDiff(
     const boost::shared_ptr<DifferentialActionDataAbstract>& data,
     const Eigen::Ref<const VectorXs>& x, const Eigen::Ref<const VectorXs>& u) {
   if (static_cast<std::size_t>(x.size()) != state_->get_nx()) {
-    throw_pretty("Invalid argument: "
-                 << "x has wrong dimension (it should be " +
-                        std::to_string(state_->get_nx()) + ")");
+    throw_pretty(
+        "Invalid argument: " << "x has wrong dimension (it should be " +
+                                    std::to_string(state_->get_nx()) + ")");
   }
   if (static_cast<std::size_t>(u.size()) != nu_) {
-    throw_pretty("Invalid argument: "
-                 << "u has wrong dimension (it should be " +
-                        std::to_string(nu_) + ")");
+    throw_pretty(
+        "Invalid argument: " << "u has wrong dimension (it should be " +
+                                    std::to_string(nu_) + ")");
   }
   Data* d = static_cast<Data*>(data.get());
   const std::size_t nv = state_->get_nv();
@@ -186,9 +188,9 @@ void DifferentialActionModelFreeInvDynamicsTpl<Scalar>::calcDiff(
     const boost::shared_ptr<DifferentialActionDataAbstract>& data,
     const Eigen::Ref<const VectorXs>& x) {
   if (static_cast<std::size_t>(x.size()) != state_->get_nx()) {
-    throw_pretty("Invalid argument: "
-                 << "x has wrong dimension (it should be " +
-                        std::to_string(state_->get_nx()) + ")");
+    throw_pretty(
+        "Invalid argument: " << "x has wrong dimension (it should be " +
+                                    std::to_string(state_->get_nx()) + ")");
   }
   Data* d = static_cast<Data*>(data.get());
 
@@ -243,6 +245,26 @@ std::size_t DifferentialActionModelFreeInvDynamicsTpl<Scalar>::get_nh() const {
     return constraints_->get_nh();
   } else {
     return Base::get_nh();
+  }
+}
+
+template <typename Scalar>
+std::size_t DifferentialActionModelFreeInvDynamicsTpl<Scalar>::get_ng_T()
+    const {
+  if (constraints_ != nullptr) {
+    return constraints_->get_ng_T();
+  } else {
+    return Base::get_ng_T();
+  }
+}
+
+template <typename Scalar>
+std::size_t DifferentialActionModelFreeInvDynamicsTpl<Scalar>::get_nh_T()
+    const {
+  if (constraints_ != nullptr) {
+    return constraints_->get_nh_T();
+  } else {
+    return Base::get_nh_T();
   }
 }
 

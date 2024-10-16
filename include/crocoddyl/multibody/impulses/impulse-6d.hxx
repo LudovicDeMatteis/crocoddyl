@@ -1,7 +1,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 // BSD 3-Clause License
 //
-// Copyright (C) 2019-2023, LAAS-CNRS, University of Edinburgh,
+// Copyright (C) 2019-2024, LAAS-CNRS, University of Edinburgh,
 //                          Heriot-Watt University
 // Copyright note valid unless otherwise stated in individual files.
 // All rights reserved.
@@ -51,8 +51,13 @@ void ImpulseModel6DTpl<Scalar>::calcDiff(
     const boost::shared_ptr<ImpulseDataAbstract>& data,
     const Eigen::Ref<const VectorXs>&) {
   boost::shared_ptr<Data> d = boost::static_pointer_cast<Data>(data);
+#if PINOCCHIO_VERSION_AT_LEAST(3, 0, 0)
+  const pinocchio::JointIndex joint =
+      state_->get_pinocchio()->frames[d->frame].parentJoint;
+#else
   const pinocchio::JointIndex joint =
       state_->get_pinocchio()->frames[d->frame].parent;
+#endif
   pinocchio::getJointVelocityDerivatives(*state_->get_pinocchio().get(),
                                          *d->pinocchio, joint, pinocchio::LOCAL,
                                          d->v_partial_dq, d->v_partial_dv);
@@ -84,8 +89,8 @@ template <typename Scalar>
 void ImpulseModel6DTpl<Scalar>::updateForce(
     const boost::shared_ptr<ImpulseDataAbstract>& data, const VectorXs& force) {
   if (force.size() != 6) {
-    throw_pretty("Invalid argument: "
-                 << "lambda has wrong dimension (it should be 6)");
+    throw_pretty(
+        "Invalid argument: " << "lambda has wrong dimension (it should be 6)");
   }
   Data* d = static_cast<Data*>(data.get());
   data->f = pinocchio::ForceTpl<Scalar>(force);

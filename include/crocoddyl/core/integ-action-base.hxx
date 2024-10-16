@@ -1,9 +1,9 @@
 ///////////////////////////////////////////////////////////////////////////////
 // BSD 3-Clause License
 //
-// Copyright (C) 2021-2022, LAAS-CNRS, University of Edinburgh, University of
-// Oxford,
-//                          University of Trento, Heriot-Watt University
+// Copyright (C) 2021-2024, LAAS-CNRS, University of Edinburgh,
+//                          University of Oxford, University of Trento,
+//                          Heriot-Watt University
 // Copyright note valid unless otherwise stated in individual files.
 // All rights reserved.
 ///////////////////////////////////////////////////////////////////////////////
@@ -91,6 +91,16 @@ std::size_t IntegratedActionModelAbstractTpl<Scalar>::get_nh() const {
 }
 
 template <typename Scalar>
+std::size_t IntegratedActionModelAbstractTpl<Scalar>::get_ng_T() const {
+  return differential_->get_ng_T();
+}
+
+template <typename Scalar>
+std::size_t IntegratedActionModelAbstractTpl<Scalar>::get_nh_T() const {
+  return differential_->get_nh_T();
+}
+
+template <typename Scalar>
 const typename MathBaseTpl<Scalar>::VectorXs&
 IntegratedActionModelAbstractTpl<Scalar>::get_g_lb() const {
   return differential_->get_g_lb();
@@ -122,8 +132,7 @@ const Scalar IntegratedActionModelAbstractTpl<Scalar>::get_dt() const {
 template <typename Scalar>
 void IntegratedActionModelAbstractTpl<Scalar>::set_dt(const Scalar dt) {
   if (dt < 0.) {
-    throw_pretty("Invalid argument: "
-                 << "dt has positive value");
+    throw_pretty("Invalid argument: " << "dt has positive value");
   }
   time_step_ = dt;
   time_step2_ = dt * dt;

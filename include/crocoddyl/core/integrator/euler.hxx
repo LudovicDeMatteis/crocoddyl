@@ -1,7 +1,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 // BSD 3-Clause License
 //
-// Copyright (C) 2019-2022, LAAS-CNRS, University of Edinburgh,
+// Copyright (C) 2019-2024, LAAS-CNRS, University of Edinburgh,
 //                          University of Oxford, University of Pisa,
 //                          Heriot-Watt University
 // Copyright note valid unless otherwise stated in individual files.
@@ -37,14 +37,14 @@ void IntegratedActionModelEulerTpl<Scalar>::calc(
     const boost::shared_ptr<ActionDataAbstract>& data,
     const Eigen::Ref<const VectorXs>& x, const Eigen::Ref<const VectorXs>& u) {
   if (static_cast<std::size_t>(x.size()) != state_->get_nx()) {
-    throw_pretty("Invalid argument: "
-                 << "x has wrong dimension (it should be " +
-                        std::to_string(state_->get_nx()) + ")");
+    throw_pretty(
+        "Invalid argument: " << "x has wrong dimension (it should be " +
+                                    std::to_string(state_->get_nx()) + ")");
   }
   if (static_cast<std::size_t>(u.size()) != nu_) {
-    throw_pretty("Invalid argument: "
-                 << "u has wrong dimension (it should be " +
-                        std::to_string(nu_) + ")");
+    throw_pretty(
+        "Invalid argument: " << "u has wrong dimension (it should be " +
+                                    std::to_string(nu_) + ")");
   }
   const std::size_t nv = differential_->get_state()->get_nv();
   Data* d = static_cast<Data*>(data.get());
@@ -70,9 +70,9 @@ void IntegratedActionModelEulerTpl<Scalar>::calc(
     const boost::shared_ptr<ActionDataAbstract>& data,
     const Eigen::Ref<const VectorXs>& x) {
   if (static_cast<std::size_t>(x.size()) != state_->get_nx()) {
-    throw_pretty("Invalid argument: "
-                 << "x has wrong dimension (it should be " +
-                        std::to_string(state_->get_nx()) + ")");
+    throw_pretty(
+        "Invalid argument: " << "x has wrong dimension (it should be " +
+                                    std::to_string(state_->get_nx()) + ")");
   }
   Data* d = static_cast<Data*>(data.get());
 
@@ -92,14 +92,14 @@ void IntegratedActionModelEulerTpl<Scalar>::calcDiff(
     const boost::shared_ptr<ActionDataAbstract>& data,
     const Eigen::Ref<const VectorXs>& x, const Eigen::Ref<const VectorXs>& u) {
   if (static_cast<std::size_t>(x.size()) != state_->get_nx()) {
-    throw_pretty("Invalid argument: "
-                 << "x has wrong dimension (it should be " +
-                        std::to_string(state_->get_nx()) + ")");
+    throw_pretty(
+        "Invalid argument: " << "x has wrong dimension (it should be " +
+                                    std::to_string(state_->get_nx()) + ")");
   }
   if (static_cast<std::size_t>(u.size()) != nu_) {
-    throw_pretty("Invalid argument: "
-                 << "u has wrong dimension (it should be " +
-                        std::to_string(nu_) + ")");
+    throw_pretty(
+        "Invalid argument: " << "u has wrong dimension (it should be " +
+                                    std::to_string(nu_) + ")");
   }
 
   const std::size_t nv = state_->get_nv();
@@ -130,8 +130,8 @@ void IntegratedActionModelEulerTpl<Scalar>::calcDiff(
   d->Luu *= time_step_;
   d->Gx = d->differential->Gx;
   d->Hx = d->differential->Hx;
-  d->Gu.resize(differential_->get_ng(), nu_);
-  d->Hu.resize(differential_->get_nh(), nu_);
+  d->Gu.conservativeResize(differential_->get_ng(), nu_);
+  d->Hu.conservativeResize(differential_->get_nh(), nu_);
   control_->multiplyByJacobian(d->control, d->differential->Gu, d->Gu);
   control_->multiplyByJacobian(d->control, d->differential->Hu, d->Hu);
 }
@@ -141,9 +141,9 @@ void IntegratedActionModelEulerTpl<Scalar>::calcDiff(
     const boost::shared_ptr<ActionDataAbstract>& data,
     const Eigen::Ref<const VectorXs>& x) {
   if (static_cast<std::size_t>(x.size()) != state_->get_nx()) {
-    throw_pretty("Invalid argument: "
-                 << "x has wrong dimension (it should be " +
-                        std::to_string(state_->get_nx()) + ")");
+    throw_pretty(
+        "Invalid argument: " << "x has wrong dimension (it should be " +
+                                    std::to_string(state_->get_nx()) + ")");
   }
   Data* d = static_cast<Data*>(data.get());
 
@@ -182,14 +182,14 @@ void IntegratedActionModelEulerTpl<Scalar>::quasiStatic(
     const Eigen::Ref<const VectorXs>& x, const std::size_t maxiter,
     const Scalar tol) {
   if (static_cast<std::size_t>(u.size()) != nu_) {
-    throw_pretty("Invalid argument: "
-                 << "u has wrong dimension (it should be " +
-                        std::to_string(nu_) + ")");
+    throw_pretty(
+        "Invalid argument: " << "u has wrong dimension (it should be " +
+                                    std::to_string(nu_) + ")");
   }
   if (static_cast<std::size_t>(x.size()) != state_->get_nx()) {
-    throw_pretty("Invalid argument: "
-                 << "x has wrong dimension (it should be " +
-                        std::to_string(state_->get_nx()) + ")");
+    throw_pretty(
+        "Invalid argument: " << "x has wrong dimension (it should be " +
+                                    std::to_string(state_->get_nx()) + ")");
   }
 
   const boost::shared_ptr<Data>& d = boost::static_pointer_cast<Data>(data);

@@ -1,7 +1,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 // BSD 3-Clause License
 //
-// Copyright (C) 2019-2023, LAAS-CNRS, University of Edinburgh,
+// Copyright (C) 2019-2024, LAAS-CNRS, University of Edinburgh,
 //                          Heriot-Watt University
 // Copyright note valid unless otherwise stated in individual files.
 // All rights reserved.
@@ -143,9 +143,9 @@ void ImpulseModelMultipleTpl<Scalar>::updateVelocity(
     const boost::shared_ptr<ImpulseDataMultiple>& data,
     const VectorXs& vnext) const {
   if (static_cast<std::size_t>(vnext.size()) != state_->get_nv()) {
-    throw_pretty("Invalid argument: "
-                 << "vnext has wrong dimension (it should be " +
-                        std::to_string(state_->get_nv()) + ")");
+    throw_pretty(
+        "Invalid argument: " << "vnext has wrong dimension (it should be " +
+                                    std::to_string(state_->get_nv()) + ")");
   }
   data->vnext = vnext;
 }
@@ -154,9 +154,9 @@ template <typename Scalar>
 void ImpulseModelMultipleTpl<Scalar>::updateForce(
     const boost::shared_ptr<ImpulseDataMultiple>& data, const VectorXs& force) {
   if (static_cast<std::size_t>(force.size()) != nc_) {
-    throw_pretty("Invalid argument: "
-                 << "force has wrong dimension (it should be " +
-                        std::to_string(nc_) + ")");
+    throw_pretty(
+        "Invalid argument: " << "force has wrong dimension (it should be " +
+                                    std::to_string(nc_) + ")");
   }
   if (static_cast<std::size_t>(data->impulses.size()) != impulses_.size()) {
     throw_pretty("Invalid argument: "
@@ -182,8 +182,13 @@ void ImpulseModelMultipleTpl<Scalar>::updateForce(
       const Eigen::VectorBlock<const VectorXs, Eigen::Dynamic> force_i =
           force.segment(nc, nc_i);
       m_i->impulse->updateForce(d_i, force_i);
+#if PINOCCHIO_VERSION_AT_LEAST(3, 0, 0)
+      const pinocchio::JointIndex joint =
+          state_->get_pinocchio()->frames[d_i->frame].parentJoint;
+#else
       const pinocchio::JointIndex joint =
           state_->get_pinocchio()->frames[d_i->frame].parent;
+#endif
       data->fext[joint] = d_i->fext;
       nc += nc_i;
     } else {
@@ -198,10 +203,10 @@ void ImpulseModelMultipleTpl<Scalar>::updateVelocityDiff(
     const MatrixXs& dvnext_dx) const {
   if (static_cast<std::size_t>(dvnext_dx.rows()) != state_->get_nv() ||
       static_cast<std::size_t>(dvnext_dx.cols()) != state_->get_ndx()) {
-    throw_pretty("Invalid argument: "
-                 << "dvnext_dx has wrong dimension (it should be " +
-                        std::to_string(state_->get_nv()) + "," +
-                        std::to_string(state_->get_ndx()) + ")");
+    throw_pretty(
+        "Invalid argument: " << "dvnext_dx has wrong dimension (it should be " +
+                                    std::to_string(state_->get_nv()) + "," +
+                                    std::to_string(state_->get_ndx()) + ")");
   }
   data->dvnext_dx = dvnext_dx;
 }

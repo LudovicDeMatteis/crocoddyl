@@ -1,7 +1,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 // BSD 3-Clause License
 //
-// Copyright (C) 2019-2022, LAAS-CNRS, University of Edinburgh,
+// Copyright (C) 2019-2024, LAAS-CNRS, University of Edinburgh,
 //                          Heriot-Watt University
 // Copyright note valid unless otherwise stated in individual files.
 // All rights reserved.
@@ -29,7 +29,11 @@ DifferentialActionModelFreeFwdDynamicsTpl<Scalar>::
         boost::shared_ptr<ActuationModelAbstract> actuation,
         boost::shared_ptr<CostModelSum> costs,
         boost::shared_ptr<ConstraintModelManager> constraints)
-    : Base(state, actuation->get_nu(), costs->get_nr()),
+    : Base(state, actuation->get_nu(), costs->get_nr(),
+           constraints != nullptr ? constraints->get_ng() : 0,
+           constraints != nullptr ? constraints->get_nh() : 0,
+           constraints != nullptr ? constraints->get_ng_T() : 0,
+           constraints != nullptr ? constraints->get_nh_T() : 0),
       actuation_(actuation),
       costs_(costs),
       constraints_(constraints),
@@ -55,14 +59,14 @@ void DifferentialActionModelFreeFwdDynamicsTpl<Scalar>::calc(
     const boost::shared_ptr<DifferentialActionDataAbstract>& data,
     const Eigen::Ref<const VectorXs>& x, const Eigen::Ref<const VectorXs>& u) {
   if (static_cast<std::size_t>(x.size()) != state_->get_nx()) {
-    throw_pretty("Invalid argument: "
-                 << "x has wrong dimension (it should be " +
-                        std::to_string(state_->get_nx()) + ")");
+    throw_pretty(
+        "Invalid argument: " << "x has wrong dimension (it should be " +
+                                    std::to_string(state_->get_nx()) + ")");
   }
   if (static_cast<std::size_t>(u.size()) != nu_) {
-    throw_pretty("Invalid argument: "
-                 << "u has wrong dimension (it should be " +
-                        std::to_string(nu_) + ")");
+    throw_pretty(
+        "Invalid argument: " << "u has wrong dimension (it should be " +
+                                    std::to_string(nu_) + ")");
   }
 
   Data* d = static_cast<Data*>(data.get());
@@ -102,9 +106,9 @@ void DifferentialActionModelFreeFwdDynamicsTpl<Scalar>::calc(
     const boost::shared_ptr<DifferentialActionDataAbstract>& data,
     const Eigen::Ref<const VectorXs>& x) {
   if (static_cast<std::size_t>(x.size()) != state_->get_nx()) {
-    throw_pretty("Invalid argument: "
-                 << "x has wrong dimension (it should be " +
-                        std::to_string(state_->get_nx()) + ")");
+    throw_pretty(
+        "Invalid argument: " << "x has wrong dimension (it should be " +
+                                    std::to_string(state_->get_nx()) + ")");
   }
 
   Data* d = static_cast<Data*>(data.get());
@@ -118,7 +122,7 @@ void DifferentialActionModelFreeFwdDynamicsTpl<Scalar>::calc(
   costs_->calc(d->costs, x);
   d->cost = d->costs->cost;
   if (constraints_ != nullptr) {
-    d->constraints->resize(this, d);
+    d->constraints->resize(this, d, false);
     constraints_->calc(d->constraints, x);
   }
 }
@@ -128,14 +132,14 @@ void DifferentialActionModelFreeFwdDynamicsTpl<Scalar>::calcDiff(
     const boost::shared_ptr<DifferentialActionDataAbstract>& data,
     const Eigen::Ref<const VectorXs>& x, const Eigen::Ref<const VectorXs>& u) {
   if (static_cast<std::size_t>(x.size()) != state_->get_nx()) {
-    throw_pretty("Invalid argument: "
-                 << "x has wrong dimension (it should be " +
-                        std::to_string(state_->get_nx()) + ")");
+    throw_pretty(
+        "Invalid argument: " << "x has wrong dimension (it should be " +
+                                    std::to_string(state_->get_nx()) + ")");
   }
   if (static_cast<std::size_t>(u.size()) != nu_) {
-    throw_pretty("Invalid argument: "
-                 << "u has wrong dimension (it should be " +
-                        std::to_string(nu_) + ")");
+    throw_pretty(
+        "Invalid argument: " << "u has wrong dimension (it should be " +
+                                    std::to_string(nu_) + ")");
   }
 
   const std::size_t nv = state_->get_nv();
@@ -177,9 +181,9 @@ void DifferentialActionModelFreeFwdDynamicsTpl<Scalar>::calcDiff(
     const boost::shared_ptr<DifferentialActionDataAbstract>& data,
     const Eigen::Ref<const VectorXs>& x) {
   if (static_cast<std::size_t>(x.size()) != state_->get_nx()) {
-    throw_pretty("Invalid argument: "
-                 << "x has wrong dimension (it should be " +
-                        std::to_string(state_->get_nx()) + ")");
+    throw_pretty(
+        "Invalid argument: " << "x has wrong dimension (it should be " +
+                                    std::to_string(state_->get_nx()) + ")");
   }
   Data* d = static_cast<Data*>(data.get());
 
@@ -212,14 +216,14 @@ void DifferentialActionModelFreeFwdDynamicsTpl<Scalar>::quasiStatic(
     Eigen::Ref<VectorXs> u, const Eigen::Ref<const VectorXs>& x,
     const std::size_t, const Scalar) {
   if (static_cast<std::size_t>(u.size()) != nu_) {
-    throw_pretty("Invalid argument: "
-                 << "u has wrong dimension (it should be " +
-                        std::to_string(nu_) + ")");
+    throw_pretty(
+        "Invalid argument: " << "u has wrong dimension (it should be " +
+                                    std::to_string(nu_) + ")");
   }
   if (static_cast<std::size_t>(x.size()) != state_->get_nx()) {
-    throw_pretty("Invalid argument: "
-                 << "x has wrong dimension (it should be " +
-                        std::to_string(state_->get_nx()) + ")");
+    throw_pretty(
+        "Invalid argument: " << "x has wrong dimension (it should be " +
+                                    std::to_string(state_->get_nx()) + ")");
   }
   // Static casting the data
   Data* d = static_cast<Data*>(data.get());
@@ -258,6 +262,26 @@ std::size_t DifferentialActionModelFreeFwdDynamicsTpl<Scalar>::get_nh() const {
     return constraints_->get_nh();
   } else {
     return Base::get_nh();
+  }
+}
+
+template <typename Scalar>
+std::size_t DifferentialActionModelFreeFwdDynamicsTpl<Scalar>::get_ng_T()
+    const {
+  if (constraints_ != nullptr) {
+    return constraints_->get_ng_T();
+  } else {
+    return Base::get_ng_T();
+  }
+}
+
+template <typename Scalar>
+std::size_t DifferentialActionModelFreeFwdDynamicsTpl<Scalar>::get_nh_T()
+    const {
+  if (constraints_ != nullptr) {
+    return constraints_->get_nh_T();
+  } else {
+    return Base::get_nh_T();
   }
 }
 

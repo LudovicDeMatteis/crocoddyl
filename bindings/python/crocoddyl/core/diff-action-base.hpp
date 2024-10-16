@@ -28,8 +28,10 @@ class DifferentialActionModelAbstract_wrap
                                        const std::size_t nu,
                                        const std::size_t nr = 1,
                                        const std::size_t ng = 0,
-                                       const std::size_t nh = 0)
-      : DifferentialActionModelAbstract(state, nu, nr, ng, nh),
+                                       const std::size_t nh = 0,
+                                       const std::size_t ng_T = 0,
+                                       const std::size_t nh_T = 0)
+      : DifferentialActionModelAbstract(state, nu, nr, ng, nh, ng_T, nh_T),
         bp::wrapper<DifferentialActionModelAbstract>() {
     unone_ = NAN * MathBase::VectorXs::Ones(nu);
   }
@@ -38,14 +40,14 @@ class DifferentialActionModelAbstract_wrap
             const Eigen::Ref<const Eigen::VectorXd>& x,
             const Eigen::Ref<const Eigen::VectorXd>& u) {
     if (static_cast<std::size_t>(x.size()) != state_->get_nx()) {
-      throw_pretty("Invalid argument: "
-                   << "x has wrong dimension (it should be " +
-                          std::to_string(state_->get_nx()) + ")");
+      throw_pretty(
+          "Invalid argument: " << "x has wrong dimension (it should be " +
+                                      std::to_string(state_->get_nx()) + ")");
     }
     if (static_cast<std::size_t>(u.size()) != nu_) {
-      throw_pretty("Invalid argument: "
-                   << "u has wrong dimension (it should be " +
-                          std::to_string(nu_) + ")");
+      throw_pretty(
+          "Invalid argument: " << "u has wrong dimension (it should be " +
+                                      std::to_string(nu_) + ")");
     }
     if (std::isnan(u.lpNorm<Eigen::Infinity>())) {
       return bp::call<void>(this->get_override("calc").ptr(), data,
@@ -60,14 +62,14 @@ class DifferentialActionModelAbstract_wrap
                 const Eigen::Ref<const Eigen::VectorXd>& x,
                 const Eigen::Ref<const Eigen::VectorXd>& u) {
     if (static_cast<std::size_t>(x.size()) != state_->get_nx()) {
-      throw_pretty("Invalid argument: "
-                   << "x has wrong dimension (it should be " +
-                          std::to_string(state_->get_nx()) + ")");
+      throw_pretty(
+          "Invalid argument: " << "x has wrong dimension (it should be " +
+                                      std::to_string(state_->get_nx()) + ")");
     }
     if (static_cast<std::size_t>(u.size()) != nu_) {
-      throw_pretty("Invalid argument: "
-                   << "u has wrong dimension (it should be " +
-                          std::to_string(nu_) + ")");
+      throw_pretty(
+          "Invalid argument: " << "u has wrong dimension (it should be " +
+                                      std::to_string(nu_) + ")");
     }
     if (std::isnan(u.lpNorm<Eigen::Infinity>())) {
       return bp::call<void>(this->get_override("calcDiff").ptr(), data,
@@ -100,9 +102,9 @@ class DifferentialActionModelAbstract_wrap
       u = bp::call<Eigen::VectorXd>(quasiStatic.ptr(), data, (Eigen::VectorXd)x,
                                     maxiter, tol);
       if (static_cast<std::size_t>(u.size()) != nu_) {
-        throw_pretty("Invalid argument: "
-                     << "u has wrong dimension (it should be " +
-                            std::to_string(nu_) + ")");
+        throw_pretty(
+            "Invalid argument: " << "u has wrong dimension (it should be " +
+                                        std::to_string(nu_) + ")");
       }
       return;
     }

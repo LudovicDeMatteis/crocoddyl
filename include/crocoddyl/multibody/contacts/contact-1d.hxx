@@ -1,7 +1,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 // BSD 3-Clause License
 //
-// Copyright (C) 2020-2023, LAAS-CNRS, University of Edinburgh,
+// Copyright (C) 2020-2024, LAAS-CNRS, University of Edinburgh,
 //                          Heriot-Watt University
 // Copyright note valid unless otherwise stated in individual files.
 // All rights reserved.
@@ -109,8 +109,13 @@ void ContactModel1DTpl<Scalar>::calcDiff(
     const boost::shared_ptr<ContactDataAbstract>& data,
     const Eigen::Ref<const VectorXs>&) {
   Data* d = static_cast<Data*>(data.get());
+#if PINOCCHIO_VERSION_AT_LEAST(3, 0, 0)
+  const pinocchio::JointIndex joint =
+      state_->get_pinocchio()->frames[d->frame].parentJoint;
+#else
   const pinocchio::JointIndex joint =
       state_->get_pinocchio()->frames[d->frame].parent;
+#endif
   pinocchio::getJointAccelerationDerivatives(
       *state_->get_pinocchio().get(), *d->pinocchio, joint, pinocchio::LOCAL,
       d->v_partial_dq, d->a_partial_dq, d->a_partial_dv, d->a_partial_da);
@@ -179,8 +184,8 @@ template <typename Scalar>
 void ContactModel1DTpl<Scalar>::updateForce(
     const boost::shared_ptr<ContactDataAbstract>& data, const VectorXs& force) {
   if (force.size() != 1) {
-    throw_pretty("Invalid argument: "
-                 << "lambda has wrong dimension (it should be 1)");
+    throw_pretty(
+        "Invalid argument: " << "lambda has wrong dimension (it should be 1)");
   }
   Data* d = static_cast<Data*>(data.get());
   const Eigen::Ref<const Matrix3s> R = d->jMf.rotation();

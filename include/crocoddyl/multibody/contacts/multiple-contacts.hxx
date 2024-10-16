@@ -1,7 +1,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 // BSD 3-Clause License
 //
-// Copyright (C) 2019-2023, LAAS-CNRS, University of Edinburgh,
+// Copyright (C) 2019-2024, LAAS-CNRS, University of Edinburgh,
 //                          Heriot-Watt University
 // Copyright note valid unless otherwise stated in individual files.
 // All rights reserved.
@@ -209,9 +209,9 @@ void ContactModelMultipleTpl<Scalar>::updateAcceleration(
     const boost::shared_ptr<ContactDataMultiple>& data,
     const VectorXs& dv) const {
   if (static_cast<std::size_t>(dv.size()) != state_->get_nv()) {
-    throw_pretty("Invalid argument: "
-                 << "dv has wrong dimension (it should be " +
-                        std::to_string(state_->get_nv()) + ")");
+    throw_pretty(
+        "Invalid argument: " << "dv has wrong dimension (it should be " +
+                                    std::to_string(state_->get_nv()) + ")");
   }
   data->dv = dv;
 }
@@ -251,20 +251,23 @@ void ContactModelMultipleTpl<Scalar>::updateForce(
         const Eigen::VectorBlock<const VectorXs, Eigen::Dynamic> force_i =
             force.segment(nc, nc_i);
         m_i->contact->updateForce(d_i, force_i);
-        ContactModel6DLoopTpl<Scalar>* c =
+        const ContactModel6DLoopTpl<Scalar>* c =
             dynamic_cast<ContactModel6DLoopTpl<Scalar>*>(m_i->contact.get());
-        if (c != nullptr){
-          ContactData6DLoopTpl<Scalar>* dc = static_cast<ContactData6DLoopTpl<Scalar>*>(d_i.get());
-          const pinocchio::JointIndex joint1 =
-            c->get_joint1_id();
-          const pinocchio::JointIndex joint2 =
-            c->get_joint2_id();
+        if (c != nullptr) {
+          const ContactData6DLoopTpl<Scalar>* dc =
+              static_cast<ContactData6DLoopTpl<Scalar>*>(d_i.get());
+          const pinocchio::JointIndex joint1 = c->get_joint1_id();
+          const pinocchio::JointIndex joint2 = c->get_joint2_id();
           data->fext[joint1] = dc->joint1_f;
           data->fext[joint2] = dc->joint2_f;
-        }
-        else{
+        } else {
+#if PINOCCHIO_VERSION_AT_LEAST(3, 0, 0)
+          const pinocchio::JointIndex joint =
+              state_->get_pinocchio()->frames[d_i->frame].parentJoint;
+#else
           const pinocchio::JointIndex joint =
               state_->get_pinocchio()->frames[d_i->frame].parent;
+#endif
           data->fext[joint] = d_i->fext;
         }
       } else {
@@ -285,20 +288,23 @@ void ContactModelMultipleTpl<Scalar>::updateForce(
         const Eigen::VectorBlock<const VectorXs, Eigen::Dynamic> force_i =
             force.segment(nc, nc_i);
         m_i->contact->updateForce(d_i, force_i);
-        ContactModel6DLoopTpl<Scalar>* c =
+        const ContactModel6DLoopTpl<Scalar>* c =
             dynamic_cast<ContactModel6DLoopTpl<Scalar>*>(m_i->contact.get());
-        if (c != nullptr){
-          ContactData6DLoopTpl<Scalar>* dc = static_cast<ContactData6DLoopTpl<Scalar>*>(d_i.get());
-          const pinocchio::JointIndex joint1 =
-            c->get_joint1_id();
-          const pinocchio::JointIndex joint2 =
-            c->get_joint2_id();
+        if (c != nullptr) {
+          const ContactData6DLoopTpl<Scalar>* dc =
+              static_cast<ContactData6DLoopTpl<Scalar>*>(d_i.get());
+          const pinocchio::JointIndex joint1 = c->get_joint1_id();
+          const pinocchio::JointIndex joint2 = c->get_joint2_id();
           data->fext[joint1] = dc->joint1_f;
           data->fext[joint2] = dc->joint2_f;
-        }
-        else{
+        } else {
+#if PINOCCHIO_VERSION_AT_LEAST(3, 0, 0)
+          const pinocchio::JointIndex joint =
+              state_->get_pinocchio()->frames[d_i->frame].parentJoint;
+#else
           const pinocchio::JointIndex joint =
               state_->get_pinocchio()->frames[d_i->frame].parent;
+#endif
           data->fext[joint] = d_i->fext;
         }
         nc += nc_i;
@@ -315,10 +321,10 @@ void ContactModelMultipleTpl<Scalar>::updateAccelerationDiff(
     const MatrixXs& ddv_dx) const {
   if (static_cast<std::size_t>(ddv_dx.rows()) != state_->get_nv() ||
       static_cast<std::size_t>(ddv_dx.cols()) != state_->get_ndx()) {
-    throw_pretty("Invalid argument: "
-                 << "ddv_dx has wrong dimension (it should be " +
-                        std::to_string(state_->get_nv()) + "," +
-                        std::to_string(state_->get_ndx()) + ")");
+    throw_pretty(
+        "Invalid argument: " << "ddv_dx has wrong dimension (it should be " +
+                                    std::to_string(state_->get_nv()) + "," +
+                                    std::to_string(state_->get_ndx()) + ")");
   }
   data->ddv_dx = ddv_dx;
 }

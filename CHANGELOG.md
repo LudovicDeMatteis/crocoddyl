@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+* Added 6D loop contacts to account for contacts between parts of the robot in https://github.com/loco-3d/crocoddyl/pull/1309
+* Fixed the inequality constraints' feasibility computation by incorporating bounds into the calculation in https://github.com/loco-3d/crocoddyl/pull/1307
+* Improved the action factory used for unit testing in https://github.com/loco-3d/crocoddyl/pull/1300
+* Ignore ruff issues in ipython notebook files in https://github.com/loco-3d/crocoddyl/pull/1297
+* Improved efficiency for computing impulse-dynamics derivatives in https://github.com/loco-3d/crocoddyl/pull/1294
+* Fixed bug of wrench cone fields not being updated with setters in https://github.com/loco-3d/crocoddyl/pull/1274
+* Replaced parent by parentJoint (which was introduced in Pinocchio 3) in https://github.com/loco-3d/crocoddyl/pull/1271
+* Introduced the notion of terminal dimension, residuals and constraints in https://github.com/loco-3d/crocoddyl/pull/1269
+* General clean ups about std::size_t in https://github.com/loco-3d/crocoddyl/pull/1265
+* Fixed issues in LQR extensions in https://github.com/loco-3d/crocoddyl/pull/1263
+* Computed dynamic feasibility everytime in https://github.com/loco-3d/crocoddyl/pull/1262
 * Extend LQR actions in https://github.com/loco-3d/crocoddyl/pull/1261
 * Print log with grad absolute + updated logs with Pinocchio 3 in https://github.com/loco-3d/crocoddyl/pull/1260
 

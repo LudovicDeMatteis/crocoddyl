@@ -1,7 +1,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 // BSD 3-Clause License
 //
-// Copyright (C) 2019-2023, LAAS-CNRS, University of Edinburgh,
+// Copyright (C) 2019-2024, LAAS-CNRS, University of Edinburgh,
 //                          University of Oxford, Heriot-Watt University
 // Copyright note valid unless otherwise stated in individual files.
 // All rights reserved.
@@ -37,7 +37,8 @@ ActionModelImpulseFwdDynamicsTpl<Scalar>::ActionModelImpulseFwdDynamicsTpl(
     boost::shared_ptr<ConstraintModelManager> constraints, const Scalar r_coeff,
     const Scalar JMinvJt_damping, const bool enable_force)
     : Base(state, 0, costs->get_nr(), constraints->get_ng(),
-           constraints->get_nh()),
+           constraints->get_nh(), constraints->get_ng_T(),
+           constraints->get_nh_T()),
       impulses_(impulses),
       costs_(costs),
       constraints_(constraints),
@@ -99,7 +100,7 @@ void ActionModelImpulseFwdDynamicsTpl<Scalar>::calc(
   costs_->calc(d->costs, x);
   d->cost = d->costs->cost;
   if (constraints_ != nullptr) {
-    d->constraints->resize(this, d);
+    d->constraints->resize(this, d, false);
     constraints_->calc(d->constraints, x);
   }
 }
@@ -164,9 +165,9 @@ template <typename Scalar>
 void ActionModelImpulseFwdDynamicsTpl<Scalar>::initCalc(
     Data* data, const Eigen::Ref<const VectorXs>& x) {
   if (static_cast<std::size_t>(x.size()) != state_->get_nx()) {
-    throw_pretty("Invalid argument: "
-                 << "x has wrong dimension (it should be " +
-                        std::to_string(state_->get_nx()) + ")");
+    throw_pretty(
+        "Invalid argument: " << "x has wrong dimension (it should be " +
+                                    std::to_string(state_->get_nx()) + ")");
   }
 
   const std::size_t nq = state_->get_nq();
@@ -211,9 +212,9 @@ template <typename Scalar>
 void ActionModelImpulseFwdDynamicsTpl<Scalar>::initCalcDiff(
     Data* data, const Eigen::Ref<const VectorXs>& x) {
   if (static_cast<std::size_t>(x.size()) != state_->get_nx()) {
-    throw_pretty("Invalid argument: "
-                 << "x has wrong dimension (it should be " +
-                        std::to_string(state_->get_nx()) + ")");
+    throw_pretty(
+        "Invalid argument: " << "x has wrong dimension (it should be " +
+                                    std::to_string(state_->get_nx()) + ")");
   }
 
   const std::size_t nv = state_->get_nv();
@@ -248,6 +249,9 @@ void ActionModelImpulseFwdDynamicsTpl<Scalar>::initCalcDiff(
   Eigen::Block<MatrixXs> f_partial_da = data->Kinv.bottomRightCorner(nc, nc);
 
   data->pinocchio.dtau_dq -= data->dgrav_dq;
+  data->pinocchio.M.template triangularView<Eigen::StrictlyLower>() =
+      data->pinocchio.M.transpose()
+          .template triangularView<Eigen::StrictlyLower>();
   data->Fx.topLeftCorner(nv, nv).setIdentity();
   data->Fx.topRightCorner(nv, nv).setZero();
   data->Fx.bottomLeftCorner(nv, nv).noalias() =
@@ -255,8 +259,7 @@ void ActionModelImpulseFwdDynamicsTpl<Scalar>::initCalcDiff(
   data->Fx.bottomLeftCorner(nv, nv).noalias() -=
       a_partial_da * data->multibody.impulses->dv0_dq.topRows(nc);
   data->Fx.bottomRightCorner(nv, nv).noalias() =
-      a_partial_dtau *
-      data->pinocchio.M.template selfadjointView<Eigen::Upper>();
+      a_partial_dtau * data->pinocchio.M;
 
   // Computing the cost derivatives
   if (enable_force_) {
@@ -288,6 +291,24 @@ std::size_t ActionModelImpulseFwdDynamicsTpl<Scalar>::get_nh() const {
     return constraints_->get_nh();
   } else {
     return Base::get_nh();
+  }
+}
+
+template <typename Scalar>
+std::size_t ActionModelImpulseFwdDynamicsTpl<Scalar>::get_ng_T() const {
+  if (constraints_ != nullptr) {
+    return constraints_->get_ng_T();
+  } else {
+    return Base::get_ng_T();
+  }
+}
+
+template <typename Scalar>
+std::size_t ActionModelImpulseFwdDynamicsTpl<Scalar>::get_nh_T() const {
+  if (constraints_ != nullptr) {
+    return constraints_->get_nh_T();
+  } else {
+    return Base::get_nh_T();
   }
 }
 
@@ -385,8 +406,8 @@ template <typename Scalar>
 void ActionModelImpulseFwdDynamicsTpl<Scalar>::set_damping_factor(
     const Scalar damping) {
   if (damping < 0.) {
-    throw_pretty("Invalid argument: "
-                 << "The damping factor has to be positive");
+    throw_pretty(
+        "Invalid argument: " << "The damping factor has to be positive");
   }
   JMinvJt_damping_ = damping;
 }
