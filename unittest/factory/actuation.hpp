@@ -11,6 +11,7 @@
 
 #include "crocoddyl/core/actuation-base.hpp"
 #include "crocoddyl/core/numdiff/actuation.hpp"
+#include "crocoddyl/multibody/states/multibody.hpp"
 #include "state.hpp"
 
 namespace crocoddyl {

@@ -213,7 +213,7 @@ void ContactModel6DLoopTpl<Scalar>::updateForce(
 template <typename Scalar>
 void ContactModel6DLoopTpl<Scalar>::updateForceDiff(
     const boost::shared_ptr<ContactDataAbstract> &data, const MatrixXs &df_dx,
-    const MatrixXs &df_du) {
+    const MatrixXs &df_du) const {
   if (static_cast<std::size_t>(df_dx.rows()) != nc_ ||
       static_cast<std::size_t>(df_dx.cols()) != state_->get_ndx())
     throw_pretty("df_dx has wrong dimension");

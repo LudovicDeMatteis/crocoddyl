@@ -250,9 +250,9 @@ class ActuationModelFloatingBaseThrustersTpl
    *
    * @return the actuation data
    */
-  virtual boost::shared_ptr<Data> createData() {
+  virtual boost::shared_ptr<Data> createData(pinocchio::DataTpl<Scalar>* const pin_data) {
     boost::shared_ptr<Data> data =
-        boost::allocate_shared<Data>(Eigen::aligned_allocator<Data>(), this);
+        boost::allocate_shared<Data>(Eigen::aligned_allocator<Data>(), this, pin_data);
     updateData(data);
     return data;
   }

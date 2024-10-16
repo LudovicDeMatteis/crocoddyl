@@ -126,7 +126,7 @@ class ContactModel6DLoopTpl : public ContactModelAbstractTpl<_Scalar> {
    */
   virtual void updateForceDiff(
       const boost::shared_ptr<ContactDataAbstract> &data, const MatrixXs &df_dx,
-      const MatrixXs &df_du);
+      const MatrixXs &df_du) const;
 
   /**
    * @brief Create the 6d loop-contact data
@@ -159,6 +159,7 @@ class ContactModel6DLoopTpl : public ContactModelAbstractTpl<_Scalar> {
   /**
    * @brief Return the Baumgarte stabilization gains
    */
+   
   const Vector2s &get_gains() const;
 
   /**
