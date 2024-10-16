@@ -142,7 +142,8 @@ class ActuationModelAbstractTpl {
    *
    * @return the actuation data
    */
-  virtual boost::shared_ptr<ActuationDataAbstract> createData();
+  virtual boost::shared_ptr<ActuationDataAbstract> createData(
+    pinocchio::DataTpl<Scalar>* const data);
 
   /**
    * @brief Return the dimension of the joint-torque input
@@ -183,8 +184,10 @@ struct ActuationDataAbstractTpl {
   typedef typename MathBase::MatrixXs MatrixXs;
 
   template <template <typename Scalar> class Model>
-  explicit ActuationDataAbstractTpl(Model<Scalar>* const model)
-      : tau(model->get_state()->get_nv()),
+  explicit ActuationDataAbstractTpl(Model<Scalar>* const model,
+                                    pinocchio::DataTpl<Scalar>* const data)
+      : pinocchio(data),
+        tau(model->get_state()->get_nv()),
         u(model->get_nu()),
         dtau_dx(model->get_state()->get_nv(), model->get_state()->get_ndx()),
         dtau_du(model->get_state()->get_nv(), model->get_nu()),
@@ -197,7 +200,8 @@ struct ActuationDataAbstractTpl {
     Mtau.setZero();
   }
   virtual ~ActuationDataAbstractTpl() {}
-
+  
+  pinocchio::DataTpl<Scalar>* pinocchio; //!< Pinocchio data
   VectorXs tau;      //!< Generalized torques
   VectorXs u;        //!< Joint torques
   MatrixXs dtau_dx;  //!< Partial derivatives of the actuation model w.r.t. the
