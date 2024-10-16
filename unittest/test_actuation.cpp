@@ -24,9 +24,15 @@ void test_construct_data(ActuationModelTypes::Type actuation_type,
   const boost::shared_ptr<crocoddyl::ActuationModelAbstract>& model =
       factory.create(actuation_type, state_type);
 
+  // Create the corresponding shared data
+  const boost::shared_ptr<crocoddyl::StateMultibody>& state =
+      boost::static_pointer_cast<crocoddyl::StateMultibody>(model->get_state());
+  pinocchio::Model& pinocchio_model = *state->get_pinocchio().get();
+  pinocchio::Data pinocchio_data(pinocchio_model);
+
   // create the corresponding data object
   const boost::shared_ptr<crocoddyl::ActuationDataAbstract>& data =
-      model->createData();
+      model->createData(&pinocchio_data);
   if (!data)
     throw std::runtime_error("[test_construct_data] Data pointer is dead.");
 }
@@ -38,9 +44,16 @@ void test_calc_returns_tau(ActuationModelTypes::Type actuation_type,
   const boost::shared_ptr<crocoddyl::ActuationModelAbstract>& model =
       factory.create(actuation_type, state_type);
 
+
+  // Create the corresponding shared data
+  const boost::shared_ptr<crocoddyl::StateMultibody>& state =
+      boost::static_pointer_cast<crocoddyl::StateMultibody>(model->get_state());
+  pinocchio::Model& pinocchio_model = *state->get_pinocchio().get();
+  pinocchio::Data pinocchio_data(pinocchio_model);
+
   // create the corresponding data object
   const boost::shared_ptr<crocoddyl::ActuationDataAbstract>& data =
-      model->createData();
+      model->createData(&pinocchio_data);
 
   // Generating random state and control vectors
   const Eigen::VectorXd x = model->get_state()->rand();
@@ -60,13 +73,19 @@ void test_actuationSet(ActuationModelTypes::Type actuation_type,
   const boost::shared_ptr<crocoddyl::ActuationModelAbstract>& model =
       factory.create(actuation_type, state_type);
 
+  // Create the corresponding shared data
+  const boost::shared_ptr<crocoddyl::StateMultibody>& state =
+      boost::static_pointer_cast<crocoddyl::StateMultibody>(model->get_state());
+  pinocchio::Model& pinocchio_model = *state->get_pinocchio().get();
+  pinocchio::Data pinocchio_data(pinocchio_model);
+
   // create the corresponding data object and set the cost to nan
   const boost::shared_ptr<crocoddyl::ActuationDataAbstract>& data =
-      model->createData();
+      model->createData(&pinocchio_data);
 
   crocoddyl::ActuationModelNumDiff model_num_diff(model);
   const boost::shared_ptr<crocoddyl::ActuationDataAbstract>& data_num_diff =
-      model_num_diff.createData();
+      model_num_diff.createData(&pinocchio_data);
 
   // Generating random values for the state and control
   Eigen::VectorXd x = model->get_state()->rand();
@@ -97,13 +116,19 @@ void test_partial_derivatives_against_numdiff(
   const boost::shared_ptr<crocoddyl::ActuationModelAbstract>& model =
       factory.create(actuation_type, state_type);
 
+  // Create the corresponding shared data
+  const boost::shared_ptr<crocoddyl::StateMultibody>& state =
+      boost::static_pointer_cast<crocoddyl::StateMultibody>(model->get_state());
+  pinocchio::Model& pinocchio_model = *state->get_pinocchio().get();
+  pinocchio::Data pinocchio_data(pinocchio_model);
+
   // create the corresponding data object and set the cost to nan
   const boost::shared_ptr<crocoddyl::ActuationDataAbstract>& data =
-      model->createData();
+      model->createData(&pinocchio_data);
 
   crocoddyl::ActuationModelNumDiff model_num_diff(model);
   const boost::shared_ptr<crocoddyl::ActuationDataAbstract>& data_num_diff =
-      model_num_diff.createData();
+      model_num_diff.createData(&pinocchio_data);
 
   // Generating random values for the state and control
   Eigen::VectorXd x = model->get_state()->rand();
@@ -138,13 +163,19 @@ void test_commands(ActuationModelTypes::Type actuation_type,
   const boost::shared_ptr<crocoddyl::ActuationModelAbstract>& model =
       factory.create(actuation_type, state_type);
 
+  // Create the corresponding shared data
+  const boost::shared_ptr<crocoddyl::StateMultibody>& state =
+      boost::static_pointer_cast<crocoddyl::StateMultibody>(model->get_state());
+  pinocchio::Model& pinocchio_model = *state->get_pinocchio().get();
+  pinocchio::Data pinocchio_data(pinocchio_model);
+
   // create the corresponding data object and set the cost to nan
   const boost::shared_ptr<crocoddyl::ActuationDataAbstract>& data =
-      model->createData();
+      model->createData(&pinocchio_data);
 
   crocoddyl::ActuationModelNumDiff model_num_diff(model);
   const boost::shared_ptr<crocoddyl::ActuationDataAbstract>& data_num_diff =
-      model_num_diff.createData();
+      model_num_diff.createData(&pinocchio_data);
 
   // Generating random values for the state and control
   Eigen::VectorXd x = model->get_state()->rand();
@@ -167,13 +198,19 @@ void test_torqueTransform(ActuationModelTypes::Type actuation_type,
   const boost::shared_ptr<crocoddyl::ActuationModelAbstract>& model =
       factory.create(actuation_type, state_type);
 
+   // Create the corresponding shared data
+  const boost::shared_ptr<crocoddyl::StateMultibody>& state =
+      boost::static_pointer_cast<crocoddyl::StateMultibody>(model->get_state());
+  pinocchio::Model& pinocchio_model = *state->get_pinocchio().get();
+  pinocchio::Data pinocchio_data(pinocchio_model);
+
   // create the corresponding data object and set the cost to nan
   const boost::shared_ptr<crocoddyl::ActuationDataAbstract>& data =
-      model->createData();
+      model->createData(&pinocchio_data);
 
   crocoddyl::ActuationModelNumDiff model_num_diff(model);
   const boost::shared_ptr<crocoddyl::ActuationDataAbstract>& data_num_diff =
-      model_num_diff.createData();
+      model_num_diff.createData(&pinocchio_data);
 
   // Generating random values for the state and control
   Eigen::VectorXd x = model->get_state()->rand();
