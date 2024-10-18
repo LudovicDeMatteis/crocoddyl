@@ -192,6 +192,11 @@ template <typename Scalar>
 struct ContactData6DTpl;
 
 template <typename Scalar>
+class ContactModel3DLoopTpl;
+template <typename Scalar>
+struct ContactData3DLoopTpl;
+
+template <typename Scalar>
 class ContactModel6DLoopTpl;
 template <typename Scalar>
 struct ContactData6DLoopTpl;
@@ -354,6 +359,11 @@ enum ContactType {
   Contact3D,
   Contact6D
 };
+enum ContactLoopType { 
+  ContactLoopUndefined, 
+  Contact3DLoop, 
+  Contact6DLoop 
+};
 enum ImpulseType { ImpulseUndefined, Impulse3D, Impulse6D };
 
 typedef ContactItemTpl<double> ContactItem;
@@ -367,6 +377,8 @@ typedef ContactModel3DTpl<double> ContactModel3D;
 typedef ContactData3DTpl<double> ContactData3D;
 typedef ContactModel6DTpl<double> ContactModel6D;
 typedef ContactData6DTpl<double> ContactData6D;
+typedef ContactModel3DLoopTpl<double> ContactModel3DLoop;
+typedef ContactData3DLoopTpl<double> ContactData3DLoop;
 typedef ContactModel6DLoopTpl<double> ContactModel6DLoop;
 typedef ContactData6DLoopTpl<double> ContactData6DLoop;
 
