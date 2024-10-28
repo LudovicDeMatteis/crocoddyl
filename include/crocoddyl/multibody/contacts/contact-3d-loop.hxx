@@ -10,6 +10,7 @@
 
 #include <pinocchio/algorithm/frames.hpp>
 #include <pinocchio/algorithm/kinematics-derivatives.hpp>
+#include <pinocchio/algorithm/frames-derivatives.hpp>
 
 #include "crocoddyl/core/utils/exception.hpp"
 #include "crocoddyl/multibody/contacts/contact-3d.hpp"
@@ -81,6 +82,10 @@ void ContactModel3DLoopTpl<Scalar>::calc(
                               joint1_id_, pinocchio::LOCAL, d->j1Jj1);
   pinocchio::getJointJacobian(*state_->get_pinocchio().get(), *d->pinocchio,
                               joint2_id_, pinocchio::LOCAL, d->j2Jj2);
+  pinocchio::getJointJacobian(*state_->get_pinocchio().get(), *d->pinocchio,
+                              joint1_id_, pinocchio::LOCAL_WORLD_ALIGNED, d->j1Jj1_lwa);
+  pinocchio::getJointJacobian(*state_->get_pinocchio().get(), *d->pinocchio,
+                              joint2_id_, pinocchio::LOCAL_WORLD_ALIGNED, d->j2Jj2_lwa);
   d->f1Jf1.noalias() = d->j1Xf1.inverse() * d->j1Jj1;
   d->f2Jf2.noalias() = d->j2Xf2.inverse() * d->j2Jj2;
 
@@ -144,59 +149,71 @@ void ContactModel3DLoopTpl<Scalar>::calcDiff(
     d->f1af2 = d->f1Mf2.act(d->f2af2);
   }
 
-  pinocchio::getJointAccelerationDerivatives(
-      *state_->get_pinocchio().get(), *d->pinocchio, joint1_id_,
-      pinocchio::LOCAL, d->v1_partial_dq, d->a1_partial_dq, d->a1_partial_dv,
+  pinocchio::getFrameAccelerationDerivatives(
+      *state_->get_pinocchio().get(), *d->pinocchio, 
+      joint1_id_, joint1_placement_,
+      pinocchio::LOCAL, d->f1_v1_partial_dq, d->f1_a1_partial_dq, d->f1_a1_partial_dv,
       d->__partial_da);
-  pinocchio::getJointAccelerationDerivatives(
-      *state_->get_pinocchio().get(), *d->pinocchio, joint2_id_,
-      pinocchio::LOCAL, d->v2_partial_dq, d->a2_partial_dq, d->a2_partial_dv,
+  pinocchio::getFrameAccelerationDerivatives(
+      *state_->get_pinocchio().get(), *d->pinocchio, 
+      joint2_id_, joint2_placement_,
+      pinocchio::LOCAL, d->f2_v2_partial_dq, d->f2_a2_partial_dq, d->f2_a2_partial_dv,
       d->__partial_da);
 
-  d->da0_dq_t1.noalias() =
-      joint1_placement_.toActionMatrixInverse() * d->a1_partial_dq;
+    d->oXR1.topLeftCorner(3, 3).noalias() = d->oRf1;
+    d->oXR1.bottomRightCorner(3, 3).noalias() = d->oRf1;
+    d->oXR2.topLeftCorner(3, 3).noalias() = d->oRf2;
+    d->oXR2.bottomRightCorner(3, 3).noalias() = d->oRf2;
+    d->f1Jf1_lwa = d->oXR1 * d->f1Jf1;
+    d->f2Jf2_lwa = d->oXR2 * d->f2Jf2;
+  SkewMatrix(d->opos, d->skew1_tmp);
+  d->dpos_dq = d->oRf1.transpose() * d->skew1_tmp * d->f1Jf1_lwa.bottomRows(3);
+  d->dpos_dq += d->oRf1.transpose() * (d->f1Jf1_lwa.topRows(3) - d->f2Jf2_lwa.topRows(3));
 
-  d->da0_dq_t2.noalias() = d->f1af2.toActionMatrix() * d->Jc;
-  d->f2_a2_partial_dq.noalias() =
-      joint2_placement_.toActionMatrixInverse() * d->a2_partial_dq;
-  d->da0_dq_t2.noalias() += d->f1Xf2 * d->f2_a2_partial_dq;
 
-  d->f1_v1_partial_dq.noalias() =
-      joint1_placement_.toActionMatrixInverse() * d->v1_partial_dq;
-  d->da0_dq_t3.noalias() = -d->f1vf2.toActionMatrix() * d->f1_v1_partial_dq;
-  d->da0_dq_t3_tmp.noalias() = d->f1vf2.toActionMatrix() * d->Jc;
-  d->da0_dq_t3.noalias() += d->f1vf1.toActionMatrix() * d->da0_dq_t3_tmp;
-  d->da0_dq_t3_tmp.noalias() =
-      joint2_placement_.toActionMatrixInverse() * d->v2_partial_dq;
-  d->da0_dq_t3.noalias() +=
-      d->f1vf1.toActionMatrix() * d->f1Xf2 * d->da0_dq_t3_tmp;
-  d->da0_dx.leftCols(nv).noalias() = d->da0_dq_t1 - d->da0_dq_t2 + d->da0_dq_t3;
+    d->ovf2 = d->oRf2 * d->f2vf2.linear();
+    SkewMatrix(d->ovf2, d->skew1_tmp);
+  d->dvel_dq = d->f1_v1_partial_dq.topRows(3);
+    d->dvel_dq -= d->f1Rf2 * d->f2_v2_partial_dq.topRows(3);
+    d->dvel_dq -= d->oRf1.transpose() * d->skew1_tmp * (d->j1Jj1_lwa.bottomRows(3) - d->j2Jj2_lwa.bottomRows(3));
+    SkewMatrix(d->pos_error, d->skew1_tmp);
+    SkewMatrix(d->f1vf1.angular(), d->skew2_tmp);
+    d->dvel_dq += d->skew1_tmp * d->f1_v1_partial_dq.bottomRows(3);
+    d->dvel_dq -= d->skew2_tmp * d->dpos_dq;
 
-  d->f2_a2_partial_dv.noalias() =
-      joint2_placement_.toActionMatrixInverse() * d->a2_partial_dv;
-  d->f1Jf2.noalias() = d->f1Xf2 * d->f2Jf2;
-  d->da0_dx.rightCols(nv).noalias() =
-      joint1_placement_.toActionMatrixInverse() * d->a1_partial_dv;
-  d->da0_dx.rightCols(nv).noalias() -= d->f1Xf2 * d->f2_a2_partial_dv;
-  d->da0_dx.rightCols(nv).noalias() -= d->f1vf2.toActionMatrix() * d->f1Jf1;
-  d->da0_dx.rightCols(nv).noalias() += d->f1vf1.toActionMatrix() * d->f1Jf2;
+    d->da0_dq = d->f1_a1_partial_dq.topRows(3);
+    d->oaf2 = d->oRf2 * d->f2af2.linear();
+    SkewMatrix(d->oaf2, d->skew1_tmp);
+    d->da0_dq -= (
+        d->f1Rf2 * d->f2_a2_partial_dq.topRows(3)
+        + d->oRf1.transpose() * d->skew1_tmp * (d->f1Jf1_lwa.bottomRows(3) - d->f2Jf2_lwa.bottomRows(3))
+    );
+    SkewMatrix(d->f1Rf2 * d->f2vf2.linear(), d->skew1_tmp);
+    d->oaf2 = d->oRf2 * d->f2vf2.angular();
+    SkewMatrix(d->oaf2, d->skew2_tmp);
+    d->da0_dq -= d->skew1_tmp * (
+        d->f1_v1_partial_dq.bottomRows(3)
+        - d->f1Rf2 * d->f2_v2_partial_dq.bottomRows(3)
+        - d->oRf1.transpose() * d->skew2_tmp * (d->j1Jj1_lwa.bottomRows(3) - d->j2Jj2_lwa.bottomRows(3))
+    );
+    SkewMatrix(d->f1vf1.angular() - d->f1vf2.angular(), d->skew1_tmp);
+    SkewMatrix(d->oRf2 * d->f1vf2.linear(), d->skew2_tmp);
+    d->da0_dq += d->skew1_tmp * (
+        d->f1Rf2 * d->f2_v2_partial_dq.topRows(3)
+        + d->oRf1.transpose() * d->skew2_tmp * (d->j1Jj1_lwa.topRows(3) - d->j2Jj2_lwa.topRows(3))
+    );
+    SkewMatrix(d->pos_error, d->skew1_tmp);
+    SkewMatrix(d->vel_error, d->skew2_tmp);
+    d->da0_dq += d->skew1_tmp * d->f1_a1_partial_dq.bottomRows(3);
+    d->da0_dq += d->skew2_tmp * d->f1_v1_partial_dq.bottomRows(3);
+    SkewMatrix(d->f1vf1.angular(), d->skew1_tmp);
+    SkewMatrix(d->f1af1.angular(), d->skew2_tmp);
+    d->da0_dq -= d->skew1_tmp * d->dvel_dq;
+    d->da0_dq -= d->skew2_tmp * d->dpos_dq;
 
   if (std::abs<Scalar>(gains_[0]) > std::numeric_limits<Scalar>::epsilon()) {
-    Matrix6s f1Mf2_log6;
-    pinocchio::Jlog6(d->f1Mf2, f1Mf2_log6);
-    d->dpos_dq.noalias() =
-        d->oMf2.toActionMatrixInverse() * d->oMf1.toActionMatrix() * d->f1Jf1;
-    d->dpos_dq.noalias() -= d->f2Jf2;
-    d->da0_dx.leftCols(nv).noalias() += gains_[0] * f1Mf2_log6 * d->dpos_dq;
   }
   if (std::abs<Scalar>(gains_[1]) > std::numeric_limits<Scalar>::epsilon()) {
-    d->f2_v2_partial_dq.noalias() =
-        joint2_placement_.toActionMatrixInverse() * d->v2_partial_dq;
-    d->f1_v2_partial_dq.noalias() = d->f1Xf2 * d->f2_v2_partial_dq;
-    d->dvel_dq.noalias() = d->f1_v1_partial_dq - d->f1_v2_partial_dq;
-    d->dvel_dq.noalias() -= d->f1vf2.toActionMatrix() * d->Jc;
-    d->da0_dx.leftCols(nv).noalias() += gains_[1] * d->dvel_dq;
-    d->da0_dx.rightCols(nv).noalias() += gains_[1] * d->Jc;
   }
 }
 

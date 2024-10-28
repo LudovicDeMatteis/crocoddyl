@@ -243,6 +243,7 @@ struct ContactData3DLoopTpl : public ContactDataAbstractTpl<_Scalar> {
   typedef ContactDataAbstractTpl<Scalar> Base;
   typedef typename MathBase::Matrix3s Matrix3s;
   typedef typename MathBase::Matrix6xs Matrix6xs;
+  typedef typename MathBase::Matrix3xs Matrix3xs;
   typedef typename MathBase::Matrix6s Matrix6s;
   typedef typename MathBase::MatrixXs MatrixXs;
   typedef typename MathBase::Vector3s Vector3s;
@@ -257,6 +258,8 @@ struct ContactData3DLoopTpl : public ContactDataAbstractTpl<_Scalar> {
       : Base(model, data),
         v1_partial_dq(6, model->get_state()->get_nv()),
         f1_v1_partial_dq(6, model->get_state()->get_nv()),
+        f1_a1_partial_dq(6, model->get_state()->get_nv()),
+        f1_a1_partial_dv(6, model->get_state()->get_nv()),
         a1_partial_dq(6, model->get_state()->get_nv()),
         a1_partial_dv(6, model->get_state()->get_nv()),
         v2_partial_dq(6, model->get_state()->get_nv()),
@@ -267,19 +270,19 @@ struct ContactData3DLoopTpl : public ContactDataAbstractTpl<_Scalar> {
         f2_a2_partial_dv(6, model->get_state()->get_nv()),
         a2_partial_dv(6, model->get_state()->get_nv()),
         __partial_da(6, model->get_state()->get_nv()),
-        da0_dq_t1(6, model->get_state()->get_nv()),
-        da0_dq_t2(6, model->get_state()->get_nv()),
-        da0_dq_t2_tmp(6, model->get_state()->get_nv()),
-        da0_dq_t3(6, model->get_state()->get_nv()),
-        da0_dq_t3_tmp(6, model->get_state()->get_nv()),
-        dpos_dq(6, model->get_state()->get_nv()),
-        dvel_dq(6, model->get_state()->get_nv()),
+        da0_dq(3, model->get_state()->get_nv()),
+        dpos_dq(3, model->get_state()->get_nv()),
+        dvel_dq(3, model->get_state()->get_nv()),
         dtau_dq_tmp(model->get_state()->get_nv(), model->get_state()->get_nv()),
         f1Jf1(6, model->get_state()->get_nv()),
+        f1Jf1_lwa(6, model->get_state()->get_nv()),
         f2Jf2(6, model->get_state()->get_nv()),
+        f2Jf2_lwa(6, model->get_state()->get_nv()),
         f1Jf2(6, model->get_state()->get_nv()),
         j1Jj1(6, model->get_state()->get_nv()),
         j2Jj2(6, model->get_state()->get_nv()),
+        j1Jj1_lwa(6, model->get_state()->get_nv()),
+        j2Jj2_lwa(6, model->get_state()->get_nv()),
         j1Xf1(SE3ActionMatrix::Identity()),
         j2Xf2(SE3ActionMatrix::Identity()),
         f1Mf2(SE3::Identity()),
@@ -294,6 +297,7 @@ struct ContactData3DLoopTpl : public ContactDataAbstractTpl<_Scalar> {
         joint2_f(Force::Zero()) {
     v1_partial_dq.setZero();
     f1_v1_partial_dq.setZero();
+    f1_a1_partial_dq.setZero();
     a1_partial_dq.setZero();
     a1_partial_dv.setZero();
     v2_partial_dq.setZero();
@@ -304,26 +308,30 @@ struct ContactData3DLoopTpl : public ContactDataAbstractTpl<_Scalar> {
     f2_a2_partial_dv.setZero();
     a2_partial_dv.setZero();
     __partial_da.setZero();
-    da0_dq_t1.setZero();
-    da0_dq_t2.setZero();
-    da0_dq_t2_tmp.setZero();
-    da0_dq_t3.setZero();
-    da0_dq_t3_tmp.setZero();
+    da0_dq.setZero();
     dpos_dq.setZero();
     dvel_dq.setZero();
     dtau_dq_tmp.setZero();
     f1Jf1.setZero();
+    f1Jf1_lwa.setZero();
     f2Jf2.setZero();
+    f2Jf2_lwa.setZero();
     f1Jf2.setZero();
     j1Jj1.setZero();
     j2Jj2.setZero();
+    j1Jj1_lwa.setZero();
+    j2Jj2_lwa.setZero();
     j2Jj1.setZero();
     opos.setZero();
     pos_error.setZero();
     vel_error.setZero();
+    ovf2.setZero();
+    oaf2.setZero();
     oRf1.setZero();
     oRf2.setZero();
     f1Rf2.setZero();
+    oXR1.setZero();
+    oXR2.setZero();
     skew1_tmp.setZero();
     skew2_tmp.setZero();
   }
@@ -339,6 +347,8 @@ struct ContactData3DLoopTpl : public ContactDataAbstractTpl<_Scalar> {
 
   Matrix6xs v1_partial_dq;
   Matrix6xs f1_v1_partial_dq;
+  Matrix6xs f1_a1_partial_dq;
+  Matrix6xs f1_a1_partial_dv;
   Matrix6xs a1_partial_dq;
   Matrix6xs a1_partial_dv;
   Matrix6xs v2_partial_dq;
@@ -350,14 +360,9 @@ struct ContactData3DLoopTpl : public ContactDataAbstractTpl<_Scalar> {
   Matrix6xs a2_partial_dv;
   Matrix6xs __partial_da;
 
-  Matrix6xs da0_dq_t1;
-  Matrix6xs da0_dq_t2;
-  Matrix6xs da0_dq_t2_tmp;
-  Matrix6xs da0_dq_t3;
-  Matrix6xs da0_dq_t3_tmp;
-
-  Matrix6xs dpos_dq;
-  Matrix6xs dvel_dq;
+  Matrix3xs dpos_dq;
+  Matrix3xs dvel_dq;
+  Matrix3xs da0_dq;
   MatrixXs dtau_dq_tmp;
   // Placement related data
   SE3 oMf1;   // Placement of the first contact frame in the world frame
@@ -369,10 +374,14 @@ struct ContactData3DLoopTpl : public ContactDataAbstractTpl<_Scalar> {
   SE3ActionMatrix f1Xf2;
   // Jacobian related data
   Matrix6xs f1Jf1;
+  Matrix6xs f1Jf1_lwa;
   Matrix6xs f2Jf2;
+  Matrix6xs f2Jf2_lwa;
   Matrix6xs f1Jf2;
   Matrix6xs j1Jj1;
   Matrix6xs j2Jj2;
+  Matrix6xs j1Jj1_lwa;
+  Matrix6xs j2Jj2_lwa;
   Matrix6xs j2Jj1;
   // Velocity related data
   Motion f1vf1;
@@ -389,10 +398,15 @@ struct ContactData3DLoopTpl : public ContactDataAbstractTpl<_Scalar> {
   Vector3s opos;
   Vector3s pos_error;
   Vector3s vel_error;
+  Vector3s ovf2;
+  Vector3s oaf2;
 
   Matrix3s oRf1;
   Matrix3s oRf2;
   Matrix3s f1Rf2;
+
+  Matrix6s oXR1;
+  Matrix6s oXR2;
   // TODO Rearrange the data
 
   Matrix3s skew1_tmp;

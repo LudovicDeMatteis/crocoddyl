@@ -120,32 +120,32 @@ void exposeContact3DLoop() {
           ":param data: Pinocchio data")[bp::with_custodian_and_ward<
           1, 2, bp::with_custodian_and_ward<1, 3> >()])
       .add_property(
-          "v1_partial_dq",
-          bp::make_getter(&ContactData3DLoop::v1_partial_dq,
+          "f1_v1_partial_dq",
+          bp::make_getter(&ContactData3DLoop::f1_v1_partial_dq,
                           bp::return_internal_reference<>()),
           "Jacobian of the spatial velocity of the first contact frame wrt q")
-      .add_property("a1_partial_dq",
-                    bp::make_getter(&ContactData3DLoop::a1_partial_dq,
+      .add_property("f1_a1_partial_dq",
+                    bp::make_getter(&ContactData3DLoop::f1_a1_partial_dq,
                                     bp::return_internal_reference<>()),
                     "Jacobian of the spatial acceleration of the first contact "
                     "frame wrt q")
-      .add_property("a1_partial_dv",
-                    bp::make_getter(&ContactData3DLoop::a1_partial_dv,
+      .add_property("f1_a1_partial_dv",
+                    bp::make_getter(&ContactData3DLoop::f1_a1_partial_dv,
                                     bp::return_internal_reference<>()),
                     "Jacobian of the spatial acceleration of the first contact "
                     "frame wrt v")
       .add_property(
-          "v2_partial_dq",
-          bp::make_getter(&ContactData3DLoop::v2_partial_dq,
+          "f2_v2_partial_dq",
+          bp::make_getter(&ContactData3DLoop::f2_v2_partial_dq,
                           bp::return_internal_reference<>()),
           "Jacobian of the spatial velocity of the second contact frame wrt q")
-      .add_property("a2_partial_dq",
-                    bp::make_getter(&ContactData3DLoop::a2_partial_dq,
+      .add_property("f2_a2_partial_dq",
+                    bp::make_getter(&ContactData3DLoop::f2_a2_partial_dq,
                                     bp::return_internal_reference<>()),
                     "Jacobian of the spatial acceleration of the second "
                     "contact frame wrt q")
-      .add_property("a2_partial_dv",
-                    bp::make_getter(&ContactData3DLoop::a2_partial_dv,
+      .add_property("f2_a2_partial_dv",
+                    bp::make_getter(&ContactData3DLoop::f2_a2_partial_dv,
                                     bp::return_internal_reference<>()),
                     "Jacobian of the spatial acceleration of the second "
                     "contact frame wrt v")
@@ -153,18 +153,10 @@ void exposeContact3DLoop() {
                     bp::make_getter(&ContactData3DLoop::da0_dx,
                                     bp::return_internal_reference<>()),
                     "Jacobian of the acceleration drift wrt x")
-      .add_property("da0_dq_t1",
-                    bp::make_getter(&ContactData3DLoop::da0_dq_t1,
+      .add_property("da0_dq",
+                    bp::make_getter(&ContactData3DLoop::da0_dq,
                                     bp::return_internal_reference<>()),
-                    "Jacobian of the acceleration drift wrt q - part 1")
-      .add_property("da0_dq_t2",
-                    bp::make_getter(&ContactData3DLoop::da0_dq_t2,
-                                    bp::return_internal_reference<>()),
-                    "Jacobian of the acceleration drift wrt q - part 2")
-      .add_property("da0_dq_t3",
-                    bp::make_getter(&ContactData3DLoop::da0_dq_t3,
-                                    bp::return_internal_reference<>()),
-                    "Jacobian of the acceleration drift wrt q - part 3")
+                    "Jacobian of the acceleration drift wrt q")
       .add_property("j1Xf1",
                     bp::make_getter(&ContactData3DLoop::j1Xf1,
                                     bp::return_internal_reference<>()),
@@ -175,6 +167,16 @@ void exposeContact3DLoop() {
                                     bp::return_internal_reference<>()),
                     "Placement of the second contact frame in the joint frame "
                     "- Action Matrix")
+      .add_property("oXR1",
+                    bp::make_getter(&ContactData3DLoop::oXR1,
+                                    bp::return_internal_reference<>()),
+                    "Placement of the first contact frame in the world frame - "
+                    "Action Matrix")
+      .add_property("oXR2",
+                    bp::make_getter(&ContactData3DLoop::oXR2,
+                                    bp::return_internal_reference<>()),
+                    "Placement of the second contact frame in the world frame - "
+                    "Action Matrix")
       .add_property("f1Mf2",
                     bp::make_getter(&ContactData3DLoop::f1Mf2,
                                     bp::return_internal_reference<>()),
@@ -187,10 +189,18 @@ void exposeContact3DLoop() {
                     bp::make_getter(&ContactData3DLoop::f1Jf1,
                                     bp::return_internal_reference<>()),
                     "Jacobian of the first contact frame")
+      .add_property("f1Jf1_lwa",
+                    bp::make_getter(&ContactData3DLoop::f1Jf1_lwa,
+                                    bp::return_internal_reference<>()),
+                    "Jacobian of the first contact frame in Local World Aligned reference frame")
       .add_property("f2Jf2",
                     bp::make_getter(&ContactData3DLoop::f2Jf2,
                                     bp::return_internal_reference<>()),
                     "Jacobian of the second frame in the joint frame")
+      .add_property("f2Jf2_lwa",
+                    bp::make_getter(&ContactData3DLoop::f2Jf2_lwa,
+                                    bp::return_internal_reference<>()),
+                    "Jacobian of the second contact frame in Local World Aligned reference frame")
       .add_property("j1Jj1",
                     bp::make_getter(&ContactData3DLoop::j1Jj1,
                                     bp::return_internal_reference<>()),
@@ -241,6 +251,14 @@ void exposeContact3DLoop() {
                     bp::make_getter(&ContactData3DLoop::pos_error,
                                     bp::return_internal_reference<>()),
                     "Position error between the contact points")
+      .add_property("dpos_dq",
+                    bp::make_getter(&ContactData3DLoop::dpos_dq,
+                                    bp::return_internal_reference<>()),
+                    "Derivative of the position error between the contact points")
+      .add_property("dvel_dq",
+                    bp::make_getter(&ContactData3DLoop::dvel_dq,
+                                    bp::return_internal_reference<>()),
+                    "Derivative of the velocity error between the contact points")
       .add_property("vel_error",
                     bp::make_getter(&ContactData3DLoop::vel_error,
                                     bp::return_internal_reference<>()),
