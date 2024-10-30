@@ -159,61 +159,64 @@ void ContactModel3DLoopTpl<Scalar>::calcDiff(
       joint2_id_, joint2_placement_,
       pinocchio::LOCAL, d->f2_v2_partial_dq, d->f2_a2_partial_dq, d->f2_a2_partial_dv,
       d->__partial_da);
-
-    d->oXR1.topLeftCorner(3, 3).noalias() = d->oRf1;
-    d->oXR1.bottomRightCorner(3, 3).noalias() = d->oRf1;
-    d->oXR2.topLeftCorner(3, 3).noalias() = d->oRf2;
-    d->oXR2.bottomRightCorner(3, 3).noalias() = d->oRf2;
-    d->f1Jf1_lwa = d->oXR1 * d->f1Jf1;
-    d->f2Jf2_lwa = d->oXR2 * d->f2Jf2;
+  d->oXR1.topLeftCorner(3, 3).noalias() = d->oRf1;
+  d->oXR1.bottomRightCorner(3, 3).noalias() = d->oRf1;
+  d->oXR2.topLeftCorner(3, 3).noalias() = d->oRf2;
+  d->oXR2.bottomRightCorner(3, 3).noalias() = d->oRf2;
+  d->f1Jf1_lwa = d->oXR1 * d->f1Jf1;
+  d->f2Jf2_lwa = d->oXR2 * d->f2Jf2;
   SkewMatrix(d->opos, d->skew1_tmp);
   d->dpos_dq = d->oRf1.transpose() * d->skew1_tmp * d->f1Jf1_lwa.bottomRows(3);
   d->dpos_dq += d->oRf1.transpose() * (d->f1Jf1_lwa.topRows(3) - d->f2Jf2_lwa.topRows(3));
 
-
-    d->ovf2 = d->oRf2 * d->f2vf2.linear();
-    SkewMatrix(d->ovf2, d->skew1_tmp);
+  d->ovf2 = d->oRf2 * d->f2vf2.linear();
+  SkewMatrix(d->ovf2, d->skew1_tmp);
   d->dvel_dq = d->f1_v1_partial_dq.topRows(3);
-    d->dvel_dq -= d->f1Rf2 * d->f2_v2_partial_dq.topRows(3);
-    d->dvel_dq -= d->oRf1.transpose() * d->skew1_tmp * (d->j1Jj1_lwa.bottomRows(3) - d->j2Jj2_lwa.bottomRows(3));
-    SkewMatrix(d->pos_error, d->skew1_tmp);
-    SkewMatrix(d->f1vf1.angular(), d->skew2_tmp);
-    d->dvel_dq += d->skew1_tmp * d->f1_v1_partial_dq.bottomRows(3);
-    d->dvel_dq -= d->skew2_tmp * d->dpos_dq;
+  d->dvel_dq -= d->f1Rf2 * d->f2_v2_partial_dq.topRows(3);
+  d->dvel_dq -= d->oRf1.transpose() * d->skew1_tmp * (d->j1Jj1_lwa.bottomRows(3) - d->j2Jj2_lwa.bottomRows(3));
+  SkewMatrix(d->pos_error, d->skew1_tmp);
+  SkewMatrix(d->f1vf1.angular(), d->skew2_tmp);
+  d->dvel_dq += d->skew1_tmp * d->f1_v1_partial_dq.bottomRows(3);
+  d->dvel_dq -= d->skew2_tmp * d->dpos_dq;
 
-    d->da0_dq = d->f1_a1_partial_dq.topRows(3);
-    d->oaf2 = d->oRf2 * d->f2af2.linear();
-    SkewMatrix(d->oaf2, d->skew1_tmp);
-    d->da0_dq -= (
-        d->f1Rf2 * d->f2_a2_partial_dq.topRows(3)
-        + d->oRf1.transpose() * d->skew1_tmp * (d->f1Jf1_lwa.bottomRows(3) - d->f2Jf2_lwa.bottomRows(3))
-    );
-    SkewMatrix(d->f1Rf2 * d->f2vf2.linear(), d->skew1_tmp);
-    d->oaf2 = d->oRf2 * d->f2vf2.angular();
-    SkewMatrix(d->oaf2, d->skew2_tmp);
-    d->da0_dq -= d->skew1_tmp * (
-        d->f1_v1_partial_dq.bottomRows(3)
-        - d->f1Rf2 * d->f2_v2_partial_dq.bottomRows(3)
-        - d->oRf1.transpose() * d->skew2_tmp * (d->j1Jj1_lwa.bottomRows(3) - d->j2Jj2_lwa.bottomRows(3))
-    );
-    SkewMatrix(d->f1vf1.angular() - d->f1vf2.angular(), d->skew1_tmp);
-    SkewMatrix(d->oRf2 * d->f1vf2.linear(), d->skew2_tmp);
-    d->da0_dq += d->skew1_tmp * (
-        d->f1Rf2 * d->f2_v2_partial_dq.topRows(3)
-        + d->oRf1.transpose() * d->skew2_tmp * (d->j1Jj1_lwa.topRows(3) - d->j2Jj2_lwa.topRows(3))
-    );
-    SkewMatrix(d->pos_error, d->skew1_tmp);
-    SkewMatrix(d->vel_error, d->skew2_tmp);
-    d->da0_dq += d->skew1_tmp * d->f1_a1_partial_dq.bottomRows(3);
-    d->da0_dq += d->skew2_tmp * d->f1_v1_partial_dq.bottomRows(3);
-    SkewMatrix(d->f1vf1.angular(), d->skew1_tmp);
-    SkewMatrix(d->f1af1.angular(), d->skew2_tmp);
-    d->da0_dq -= d->skew1_tmp * d->dvel_dq;
-    d->da0_dq -= d->skew2_tmp * d->dpos_dq;
+  d->da0_dq += d->f1_a1_partial_dq.topRows(3);
+
+  d->oaf2 = d->oRf2 * d->f2af2.linear();
+  SkewMatrix(d->oaf2, d->skew1_tmp);
+  d->da0_dq -= (
+      d->f1Rf2 * d->f2_a2_partial_dq.topRows(3)
+      + d->oRf1.transpose() * d->skew1_tmp * (d->f1Jf1_lwa.bottomRows(3) - d->f2Jf2_lwa.bottomRows(3))
+  );
+
+  SkewMatrix(d->f1Rf2 * d->f2vf2.linear(), d->skew1_tmp);
+  SkewMatrix(d->oRf2 * d->f2vf2.angular(), d->skew2_tmp);
+  d->da0_dq -= d->skew1_tmp * (
+      d->f1_v1_partial_dq.bottomRows(3)
+      - d->f1Rf2 * d->f2_v2_partial_dq.bottomRows(3)
+      - d->oRf1.transpose() * d->skew2_tmp * (d->j1Jj1_lwa.bottomRows(3) - d->j2Jj2_lwa.bottomRows(3))
+  );
+
+  SkewMatrix(d->f1vf1.angular() - d->f1vf2.angular(), d->skew1_tmp);
+  SkewMatrix(d->oRf2 * d->f2vf2.linear(), d->skew2_tmp);
+  d->da0_dq += d->skew1_tmp * (
+      d->f1Rf2 * d->f2_v2_partial_dq.topRows(3)
+      + d->oRf1.transpose() * d->skew2_tmp * (d->j1Jj1_lwa.bottomRows(3) - d->j2Jj2_lwa.bottomRows(3))
+  );
+
+  SkewMatrix(d->pos_error, d->skew1_tmp);
+  SkewMatrix(d->vel_error, d->skew2_tmp);
+  d->da0_dq += d->skew1_tmp * d->f1_a1_partial_dq.bottomRows(3);
+  d->da0_dq += d->skew2_tmp * d->f1_v1_partial_dq.bottomRows(3);
+  SkewMatrix(d->f1vf1.angular(), d->skew1_tmp);
+  SkewMatrix(d->f1af1.angular(), d->skew2_tmp);
+  d->da0_dq -= d->skew1_tmp * d->dvel_dq;
+  d->da0_dq -= d->skew2_tmp * d->dpos_dq;
 
   if (std::abs<Scalar>(gains_[0]) > std::numeric_limits<Scalar>::epsilon()) {
+    d->da0_dq.noalias() += gains_[0] * d->dpos_dq;
   }
   if (std::abs<Scalar>(gains_[1]) > std::numeric_limits<Scalar>::epsilon()) {
+    d->da0_dq.noalias() += gains_[1] * d->dvel_dq;
   }
 }
 

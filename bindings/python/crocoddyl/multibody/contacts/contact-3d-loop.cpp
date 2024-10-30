@@ -209,6 +209,14 @@ void exposeContact3DLoop() {
                     bp::make_getter(&ContactData3DLoop::j2Jj2,
                                     bp::return_internal_reference<>()),
                     "Jacobian of the second contact frame")
+      .add_property("j1Jj1_lwa",
+                    bp::make_getter(&ContactData3DLoop::j1Jj1_lwa,
+                                    bp::return_internal_reference<>()),
+                    "Jacobian of the first joint in the joint frame")
+      .add_property("j2Jj2_lwa",
+                    bp::make_getter(&ContactData3DLoop::j2Jj2_lwa,
+                                    bp::return_internal_reference<>()),
+                    "Jacobian of the second contact frame")
       .add_property("f1vf1",
                     bp::make_getter(&ContactData3DLoop::f1vf1,
                                     bp::return_internal_reference<>()),
