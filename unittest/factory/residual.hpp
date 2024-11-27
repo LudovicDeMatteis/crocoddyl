@@ -28,6 +28,7 @@ struct ResidualModelTypes {
     ResidualModelFrameTranslation,
     ResidualModelFrameVelocity,
     ResidualModelControlGrav,
+    ResidualModelFlyHigh,
 #ifdef PINOCCHIO_WITH_HPP_FCL
     ResidualModelPairCollision,
 #endif  // PINOCCHIO_WITH_HPP_FCL

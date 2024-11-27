@@ -34,6 +34,7 @@ void exposeMultibody() {
   exposeDifferentialActionContactInvDynamics();
   exposeActionImpulseFwdDynamics();
   exposeResidualState();
+  exposeResidualFlyHigh();
   exposeResidualCentroidalMomentum();
   exposeResidualCoMPosition();
   exposeResidualContactForce();

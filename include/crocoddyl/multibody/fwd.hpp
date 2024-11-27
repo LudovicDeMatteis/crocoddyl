@@ -150,6 +150,11 @@ class ResidualModelStateTpl;
 template <typename Scalar>
 struct ResidualDataStateTpl;
 
+template <typename Scalar>
+class ResidualModelFlyHighTpl;
+template <typename Scalar>
+struct ResidualDataFlyHighTpl;
+
 #ifdef PINOCCHIO_WITH_HPP_FCL
 template <typename Scalar>
 class ResidualModelPairCollisionTpl;
@@ -333,6 +338,8 @@ typedef ResidualModelImpulseCoMTpl<double> ResidualModelImpulseCoM;
 typedef ResidualDataImpulseCoMTpl<double> ResidualDataImpulseCoM;
 typedef ResidualModelStateTpl<double> ResidualModelState;
 typedef ResidualDataStateTpl<double> ResidualDataState;
+typedef ResidualModelFlyHighTpl<double> ResidualModelFlyHigh;
+typedef ResidualDataFlyHighTpl<double> ResidualDataFlyHigh;
 
 #ifdef PINOCCHIO_WITH_HPP_FCL
 typedef ResidualModelPairCollisionTpl<double> ResidualModelPairCollision;

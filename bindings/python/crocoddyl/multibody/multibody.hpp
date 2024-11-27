@@ -39,6 +39,7 @@ void exposeDifferentialActionContactFwdDynamics();
 void exposeDifferentialActionContactInvDynamics();
 void exposeActionImpulseFwdDynamics();
 void exposeResidualState();
+void exposeResidualFlyHigh();
 void exposeResidualCentroidalMomentum();
 void exposeResidualCoMPosition();
 void exposeResidualContactForce();
