@@ -20,7 +20,8 @@ ResidualModelContactForceTpl<Scalar>::ResidualModelContactForceTpl(
       fwddyn_(fwddyn),
       update_jacobians_(true),
       id_(id),
-      fref_(fref) {
+      fref_(fref),
+      id_from_name_(false) {
   if (nc > 6) {
     throw_pretty(
         "Invalid argument in ResidualModelContactForce: nc should be less than "
@@ -36,13 +37,39 @@ ResidualModelContactForceTpl<Scalar>::ResidualModelContactForceTpl(
 
 template <typename Scalar>
 ResidualModelContactForceTpl<Scalar>::ResidualModelContactForceTpl(
+    boost::shared_ptr<StateMultibody> state, const std::string& contact_name,
+    const Force& fref, const std::size_t nc, const std::size_t nu,
+    const bool fwddyn)
+    : Base(state, nc, nu, fwddyn ? true : false, fwddyn ? true : false, true),
+      fwddyn_(fwddyn),
+      update_jacobians_(true),
+      name_(contact_name),
+      fref_(fref),
+      id_from_name_(true) {
+  if (nc > 6) {
+    throw_pretty(
+        "Invalid argument in ResidualModelContactForce: nc should be less than "
+        "6");
+  }
+  // TODO check the contact name
+  // if (state->get_contacts()->contacts.find(contact_name) ==
+  //     state->get_contacts()->contacts.end()) {
+  //   throw_pretty(
+  //       "Invalid argument: "
+  //       << "the contact name is wrong (it does not exist in the robot)");
+  // }
+}
+
+template <typename Scalar>
+ResidualModelContactForceTpl<Scalar>::ResidualModelContactForceTpl(
     boost::shared_ptr<StateMultibody> state, const pinocchio::FrameIndex id,
     const Force& fref, const std::size_t nc)
     : Base(state, nc),
       fwddyn_(true),
       update_jacobians_(true),
       id_(id),
-      fref_(fref) {
+      fref_(fref),
+      id_from_name_(false) {
   if (nc > 6) {
     throw_pretty(
         "Invalid argument in ResidualModelContactForce: nc should be less than "
@@ -74,6 +101,9 @@ void ResidualModelContactForceTpl<Scalar>::calc(
       data->r = (d->contact->f - fref_).linear();
       break;
     case Contact6D:
+      data->r = (d->contact->f - fref_).toVector();
+      break;
+    case Contact6DLoop:
       data->r = (d->contact->f - fref_).toVector();
       break;
     default:
@@ -133,6 +163,10 @@ void ResidualModelContactForceTpl<Scalar>::updateJacobians(
       data->Ru = df_du.template topRows<3>();
       break;
     case Contact6D:
+      data->Rx = df_dx;
+      data->Ru = df_du;
+      break;
+    case Contact6DLoop:
       data->Rx = df_dx;
       data->Ru = df_du;
       break;

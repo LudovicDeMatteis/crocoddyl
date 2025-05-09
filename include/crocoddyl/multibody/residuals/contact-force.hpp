@@ -92,6 +92,27 @@ class ResidualModelContactForceTpl : public ResidualModelAbstractTpl<_Scalar> {
   /**
    * @brief Initialize the contact force residual model
    *
+   * Note that for the inverse-dynamic cases, the control vector contains the
+   * generalized accelerations, torques, and all the contact forces.
+   *
+   * @param[in] state   Multibody state
+   * @param[in] contact_name  Reference contact name
+   * @param[in] fref    Reference spatial contact force in the contact
+   * coordinates
+   * @param[in] nc      Dimension of the contact force (nc <= 6)
+   * @param[in] nu      Dimension of control vector
+   * @param[in] fwddyn  Indicates that we have a forward dynamics problem (true)
+   * or inverse dynamics (false)
+   */
+  ResidualModelContactForceTpl(
+                                boost::shared_ptr<StateMultibody> state, 
+                                const std::string& contact_name,
+                                const Force& fref, const std::size_t nc, 
+                                const std::size_t nu, const bool fwddyn);
+
+  /**
+   * @brief Initialize the contact force residual model
+   *
    * The default `nu` is obtained from `StateAbstractTpl::get_nv()`. Note that
    * this constructor can be used for forward-dynamics cases only.
    *
@@ -193,6 +214,13 @@ class ResidualModelContactForceTpl : public ResidualModelAbstractTpl<_Scalar> {
   pinocchio::FrameIndex get_id() const;
 
   /**
+   * @brief Return the reference contact name
+   */
+  const std::string& get_name() const {
+    return name_;
+  }
+
+  /**
    * @brief Return the reference spatial contact force in the contact
    * coordinates
    */
@@ -217,6 +245,8 @@ class ResidualModelContactForceTpl : public ResidualModelAbstractTpl<_Scalar> {
    */
   virtual void print(std::ostream& os) const;
 
+  bool is_id_from_name() const { return id_from_name_; }
+
  protected:
   using Base::nr_;
   using Base::nu_;
@@ -228,6 +258,8 @@ class ResidualModelContactForceTpl : public ResidualModelAbstractTpl<_Scalar> {
   bool update_jacobians_;     //!< Indicates if we need to update the Jacobians
                               //!< (used for inverse dynamics case)
   pinocchio::FrameIndex id_;  //!< Reference frame id
+  std::string name_;               //!< Reference contact name
+  bool id_from_name_;
   Force fref_;  //!< Reference spatial contact force in the contact coordinates
 };
 
@@ -266,79 +298,164 @@ struct ResidualDataContactForceTpl : public ResidualDataAbstractTpl<_Scalar> {
       is_contact = false;
     }
 
-    // Avoids data casting at runtime
-    const pinocchio::FrameIndex id = model->get_id();
-    const boost::shared_ptr<StateMultibody>& state =
-        boost::static_pointer_cast<StateMultibody>(model->get_state());
-    std::string frame_name = state->get_pinocchio()->frames[id].name;
-    bool found_contact = false;
-    if (is_contact) {
-      for (typename ContactModelMultiple::ContactDataContainer::iterator it =
-               d1->contacts->contacts.begin();
-           it != d1->contacts->contacts.end(); ++it) {
-        if (it->second->frame == id) {
-          ContactData1DTpl<Scalar>* d1d =
-              dynamic_cast<ContactData1DTpl<Scalar>*>(it->second.get());
-          if (d1d != NULL) {
-            contact_type = Contact1D;
-            found_contact = true;
-            contact = it->second;
+    if(!model->is_id_from_name()){
+      // Avoids data casting at runtime
+      const pinocchio::FrameIndex id = model->get_id();
+      const boost::shared_ptr<StateMultibody>& state =
+          boost::static_pointer_cast<StateMultibody>(model->get_state());
+      std::string frame_name = state->get_pinocchio()->frames[id].name;
+      bool found_contact = false;
+      if (is_contact) {
+        for (typename ContactModelMultiple::ContactDataContainer::iterator it =
+                d1->contacts->contacts.begin();
+            it != d1->contacts->contacts.end(); ++it) {
+          if (it->second->frame == id) {
+            ContactData1DTpl<Scalar>* d1d =
+                dynamic_cast<ContactData1DTpl<Scalar>*>(it->second.get());
+            if (d1d != NULL) {
+              contact_type = Contact1D;
+              found_contact = true;
+              contact = it->second;
+              break;
+            }
+            ContactData3DTpl<Scalar>* d3d =
+                dynamic_cast<ContactData3DTpl<Scalar>*>(it->second.get());
+            if (d3d != NULL) {
+              contact_type = Contact3D;
+              found_contact = true;
+              contact = it->second;
+              break;
+            }
+            ContactData6DTpl<Scalar>* d6d =
+                dynamic_cast<ContactData6DTpl<Scalar>*>(it->second.get());
+            if (d6d != NULL) {
+              contact_type = Contact6D;
+              found_contact = true;
+              contact = it->second;
+              break;
+            }
+            throw_pretty(
+                "Domain error: there isn't defined at least a 3d contact for " +
+                frame_name);
             break;
           }
-          ContactData3DTpl<Scalar>* d3d =
-              dynamic_cast<ContactData3DTpl<Scalar>*>(it->second.get());
-          if (d3d != NULL) {
-            contact_type = Contact3D;
-            found_contact = true;
-            contact = it->second;
+        }
+      } else {
+        for (typename ImpulseModelMultiple::ImpulseDataContainer::iterator it =
+                d2->impulses->impulses.begin();
+            it != d2->impulses->impulses.end(); ++it) {
+          if (it->second->frame == id) {
+            ImpulseData3DTpl<Scalar>* d3d =
+                dynamic_cast<ImpulseData3DTpl<Scalar>*>(it->second.get());
+            if (d3d != NULL) {
+              contact_type = Contact3D;
+              found_contact = true;
+              contact = it->second;
+              break;
+            }
+            ImpulseData6DTpl<Scalar>* d6d =
+                dynamic_cast<ImpulseData6DTpl<Scalar>*>(it->second.get());
+            if (d6d != NULL) {
+              contact_type = Contact6D;
+              found_contact = true;
+              contact = it->second;
+              break;
+            }
+            throw_pretty(
+                "Domain error: there isn't defined at least a 3d impulse for " +
+                frame_name);
             break;
           }
-          ContactData6DTpl<Scalar>* d6d =
-              dynamic_cast<ContactData6DTpl<Scalar>*>(it->second.get());
-          if (d6d != NULL) {
-            contact_type = Contact6D;
-            found_contact = true;
-            contact = it->second;
-            break;
-          }
-          throw_pretty(
-              "Domain error: there isn't defined at least a 3d contact for " +
-              frame_name);
-          break;
         }
       }
-    } else {
-      for (typename ImpulseModelMultiple::ImpulseDataContainer::iterator it =
-               d2->impulses->impulses.begin();
-           it != d2->impulses->impulses.end(); ++it) {
-        if (it->second->frame == id) {
-          ImpulseData3DTpl<Scalar>* d3d =
-              dynamic_cast<ImpulseData3DTpl<Scalar>*>(it->second.get());
-          if (d3d != NULL) {
-            contact_type = Contact3D;
-            found_contact = true;
-            contact = it->second;
-            break;
-          }
-          ImpulseData6DTpl<Scalar>* d6d =
-              dynamic_cast<ImpulseData6DTpl<Scalar>*>(it->second.get());
-          if (d6d != NULL) {
-            contact_type = Contact6D;
-            found_contact = true;
-            contact = it->second;
-            break;
-          }
-          throw_pretty(
-              "Domain error: there isn't defined at least a 3d impulse for " +
-              frame_name);
-          break;
-        }
+      if (!found_contact) {
+        throw_pretty(
+            "Domain error: there isn't defined contact/impulse at frame " +
+            frame_name);
       }
     }
-    if (!found_contact) {
-      throw_pretty(
-          "Domain error: there isn't defined contact/impulse data for " +
-          frame_name);
+    else{
+      // Avoids data casting at runtime
+      const std::string name = model->get_name();
+      const boost::shared_ptr<StateMultibody>& state =
+          boost::static_pointer_cast<StateMultibody>(model->get_state());
+      bool found_contact = false;
+      if (is_contact) {
+        for (typename ContactModelMultiple::ContactDataContainer::iterator it =
+                d1->contacts->contacts.begin();
+            it != d1->contacts->contacts.end(); ++it) {
+          if (it->first == name) {
+            ContactData1DTpl<Scalar>* d1d =
+                dynamic_cast<ContactData1DTpl<Scalar>*>(it->second.get());
+            if (d1d != NULL) {
+              contact_type = Contact1D;
+              found_contact = true;
+              contact = it->second;
+              break;
+            }
+            ContactData3DTpl<Scalar>* d3d =
+                dynamic_cast<ContactData3DTpl<Scalar>*>(it->second.get());
+            if (d3d != NULL) {
+              contact_type = Contact3D;
+              found_contact = true;
+              contact = it->second;
+              break;
+            }
+            ContactData6DTpl<Scalar>* d6d =
+                dynamic_cast<ContactData6DTpl<Scalar>*>(it->second.get());
+            if (d6d != NULL) {
+              contact_type = Contact6D;
+              found_contact = true;
+              contact = it->second;
+              break;
+            }
+            ContactData6DLoopTpl<Scalar>* d6dLoop =
+                dynamic_cast<ContactData6DLoopTpl<Scalar>*>(it->second.get());
+            if (d6dLoop != NULL) {
+              contact_type = Contact6DLoop;
+              found_contact = true;
+              contact = it->second;
+              break;
+            }
+            throw_pretty(
+                "Domain error: there isn't defined a contact with name " +
+                name);
+            break;
+          }
+        }
+      } else {
+        for (typename ImpulseModelMultiple::ImpulseDataContainer::iterator it =
+                d2->impulses->impulses.begin();
+            it != d2->impulses->impulses.end(); ++it) {
+          if (it->first == name) {
+            ImpulseData3DTpl<Scalar>* d3d =
+                dynamic_cast<ImpulseData3DTpl<Scalar>*>(it->second.get());
+            if (d3d != NULL) {
+              contact_type = Contact3D;
+              found_contact = true;
+              contact = it->second;
+              break;
+            }
+            ImpulseData6DTpl<Scalar>* d6d =
+                dynamic_cast<ImpulseData6DTpl<Scalar>*>(it->second.get());
+            if (d6d != NULL) {
+              contact_type = Contact6D;
+              found_contact = true;
+              contact = it->second;
+              break;
+            }
+            throw_pretty(
+                "Domain error: there isn't defined a impulse with name " +
+                name);
+            break;
+          }
+        }
+      }
+      if (!found_contact) {
+        throw_pretty(
+            "Domain error: there isn't defined contact/impulse with name " +
+            name);
+      }
     }
   }
 

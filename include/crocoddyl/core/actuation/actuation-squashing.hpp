@@ -72,8 +72,8 @@ class ActuationSquashingModelTpl : public ActuationModelAbstractTpl<_Scalar> {
     data->u.noalias() = data->Mtau * tau;
   }
 
-  boost::shared_ptr<ActuationDataAbstract> createData() {
-    return boost::allocate_shared<Data>(Eigen::aligned_allocator<Data>(), this);
+  boost::shared_ptr<ActuationDataAbstract> createData(pinocchio::DataTpl<Scalar>* const data) {
+    return boost::allocate_shared<Data>(Eigen::aligned_allocator<Data>(), this, data);
   };
 
   const boost::shared_ptr<SquashingModelAbstract>& get_squashing() const {
@@ -100,10 +100,11 @@ struct ActuationSquashingDataTpl : public ActuationDataAbstractTpl<_Scalar> {
   typedef typename MathBase::MatrixXs MatrixXs;
 
   template <template <typename Scalar> class Model>
-  explicit ActuationSquashingDataTpl(Model<Scalar>* const model)
-      : Base(model),
+  explicit ActuationSquashingDataTpl(Model<Scalar>* const model, 
+    pinocchio::DataTpl<Scalar>* const data)
+      : Base(model,data),
         squashing(model->get_squashing()->createData()),
-        actuation(model->get_actuation()->createData()) {}
+        actuation(model->get_actuation()->createData(pinocchio)) {}
 
   ~ActuationSquashingDataTpl() {}
 
@@ -114,6 +115,7 @@ struct ActuationSquashingDataTpl : public ActuationDataAbstractTpl<_Scalar> {
   using Base::dtau_dx;
   using Base::tau;
   using Base::tau_set;
+  using Base::pinocchio;
 };
 
 }  // namespace crocoddyl

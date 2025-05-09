@@ -179,7 +179,7 @@ int main(int argc, char* argv[]) {
       static_cast<crocoddyl::DifferentialActionDataContactFwdDynamics*>(
           runningDAM_data.get());
   boost::shared_ptr<crocoddyl::ActuationDataAbstract> actuation_data =
-      actuation->createData();
+      actuation->createData(d->multibody.pinocchio);
   boost::shared_ptr<crocoddyl::CostDataAbstract> goalTrackingCost_data =
       goalTrackingCost->createData(&d->multibody);
   boost::shared_ptr<crocoddyl::CostDataAbstract> xRegCost_data =

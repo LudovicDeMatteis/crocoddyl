@@ -104,17 +104,19 @@ class ActuationModelAbstract_wrap : public ActuationModelAbstract,
     return this->ActuationModelAbstract::torqueTransform(data, x, u);
   }
 
-  boost::shared_ptr<ActuationDataAbstract> createData() {
+  boost::shared_ptr<ActuationDataAbstract> createData(
+      pinocchio::DataTpl<Scalar>* const data) {
     enableMultithreading() = false;
     if (boost::python::override createData = this->get_override("createData")) {
       return bp::call<boost::shared_ptr<ActuationDataAbstract> >(
-          createData.ptr());
+          createData.ptr(), boost::ref(data));
     }
-    return ActuationModelAbstract::createData();
+    return ActuationModelAbstract::createData(data);
   }
 
-  boost::shared_ptr<ActuationDataAbstract> default_createData() {
-    return this->ActuationModelAbstract::createData();
+  boost::shared_ptr<ActuationDataAbstract> default_createData(
+    pinocchio::DataTpl<Scalar>* const data) {
+    return this->ActuationModelAbstract::createData(data);
   }
 };
 

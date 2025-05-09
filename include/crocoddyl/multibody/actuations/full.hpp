@@ -118,9 +118,9 @@ class ActuationModelFullTpl : public ActuationModelAbstractTpl<_Scalar> {
    * @param[in] data  shared data (it should be of type DataCollectorContactTpl)
    * @return the cost data.
    */
-  virtual boost::shared_ptr<Data> createData() {
+  virtual boost::shared_ptr<Data> createData(pinocchio::DataTpl<Scalar>* const pin_data) {
     boost::shared_ptr<Data> data =
-        boost::allocate_shared<Data>(Eigen::aligned_allocator<Data>(), this);
+        boost::allocate_shared<Data>(Eigen::aligned_allocator<Data>(), this, pin_data);
     data->dtau_du.diagonal().setOnes();
     data->Mtau.setIdentity();
     return data;

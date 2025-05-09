@@ -37,6 +37,19 @@ void exposeResidualContactForce() {
           ":param fwddyn: indicate if we have a forward dynamics problem "
           "(True) or inverse "
           "dynamics problem (False) (default True)"))
+      .def(bp::init<boost::shared_ptr<StateMultibody>, std::string,
+               pinocchio::Force, std::size_t, std::size_t, bool >(
+          bp::args("self", "state", "name", "fref", "nc", "nu", "fwddyn"),
+          "Initialize the contact force residual model.\n\n"
+          ":param state: state of the multibody system\n"
+          ":param name: contact name\n"
+          ":param fref: reference spatial contact force in the contact "
+          "coordinates\n"
+          ":param nc: dimension of the contact force (nc <= 6)\n"
+          ":param nu: dimension of control vector\n"
+          ":param fwddyn: indicate if we have a forward dynamics problem "
+          "(True) or inverse "
+          "dynamics problem (False) (default True)"))
       .def(bp::init<boost::shared_ptr<StateMultibody>, pinocchio::FrameIndex,
                     pinocchio::Force, std::size_t>(
           bp::args("self", "state", "id", "fref", "nc"),

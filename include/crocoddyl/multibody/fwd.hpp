@@ -352,7 +352,8 @@ enum ContactType {
   Contact1D,
   Contact2D,
   Contact3D,
-  Contact6D
+  Contact6D,
+  Contact6DLoop
 };
 enum ImpulseType { ImpulseUndefined, Impulse3D, Impulse6D };
 

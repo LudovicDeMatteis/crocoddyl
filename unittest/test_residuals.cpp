@@ -47,7 +47,7 @@ void test_calc_returns_a_residual(ResidualModelTypes::Type residual_type,
   pinocchio::Model& pinocchio_model = *state->get_pinocchio().get();
   pinocchio::Data pinocchio_data(pinocchio_model);
   const boost::shared_ptr<crocoddyl::ActuationDataAbstract>& actuation_data =
-      actuation_model->createData();
+      actuation_model->createData(&pinocchio_data);
   crocoddyl::DataCollectorActMultibody shared_data(&pinocchio_data,
                                                    actuation_data);
 
@@ -92,7 +92,7 @@ void test_calc_against_numdiff(ResidualModelTypes::Type residual_type,
   pinocchio::Model& pinocchio_model = *state->get_pinocchio().get();
   pinocchio::Data pinocchio_data(pinocchio_model);
   const boost::shared_ptr<crocoddyl::ActuationDataAbstract>& actuation_data =
-      actuation_model->createData();
+      actuation_model->createData(&pinocchio_data);
   crocoddyl::DataCollectorActMultibody shared_data(&pinocchio_data,
                                                    actuation_data);
 
@@ -147,7 +147,7 @@ void test_partial_derivatives_against_numdiff(
   pinocchio::Model& pinocchio_model = *state->get_pinocchio().get();
   pinocchio::Data pinocchio_data(pinocchio_model);
   const boost::shared_ptr<crocoddyl::ActuationDataAbstract>& actuation_data =
-      actuation_model->createData();
+      actuation_model->createData(&pinocchio_data);
   crocoddyl::DataCollectorActMultibody shared_data(&pinocchio_data,
                                                    actuation_data);
 

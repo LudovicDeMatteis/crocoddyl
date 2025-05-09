@@ -43,7 +43,7 @@ void test_calc_returns_a_cost(CostModelNoFFTypes::Type cost_type,
   boost::shared_ptr<crocoddyl::ActuationModelAbstract> actuation =
       boost::make_shared<crocoddyl::ActuationModelFull>(state);
   const boost::shared_ptr<crocoddyl::ActuationDataAbstract>& actuation_data =
-      actuation->createData();
+      actuation->createData(&pinocchio_data);
   crocoddyl::DataCollectorActMultibody shared_data(&pinocchio_data,
                                                    actuation_data);
   const boost::shared_ptr<crocoddyl::CostDataAbstract>& data =
@@ -80,7 +80,7 @@ void test_calc_against_numdiff(CostModelNoFFTypes::Type cost_type,
   boost::shared_ptr<crocoddyl::ActuationModelAbstract> actuation =
       boost::make_shared<crocoddyl::ActuationModelFull>(state);
   const boost::shared_ptr<crocoddyl::ActuationDataAbstract>& actuation_data =
-      actuation->createData();
+      actuation->createData(&pinocchio_data);
   crocoddyl::DataCollectorActMultibody shared_data(&pinocchio_data,
                                                    actuation_data);
   const boost::shared_ptr<crocoddyl::CostDataAbstract>& data =
@@ -125,7 +125,7 @@ void test_partial_derivatives_against_numdiff(
   boost::shared_ptr<crocoddyl::ActuationModelAbstract> actuation_model =
       boost::make_shared<crocoddyl::ActuationModelFull>(state);
   const boost::shared_ptr<crocoddyl::ActuationDataAbstract>& actuation_data =
-      actuation_model->createData();
+      actuation_model->createData(&pinocchio_data);
   crocoddyl::DataCollectorActMultibody shared_data(&pinocchio_data,
                                                    actuation_data);
   const boost::shared_ptr<crocoddyl::CostDataAbstract>& data =
@@ -208,7 +208,7 @@ void test_dimensions_in_cost_sum(CostModelNoFFTypes::Type cost_type,
   boost::shared_ptr<crocoddyl::ActuationModelAbstract> actuation =
       boost::make_shared<crocoddyl::ActuationModelFull>(state);
   const boost::shared_ptr<crocoddyl::ActuationDataAbstract>& actuation_data =
-      actuation->createData();
+      actuation->createData(&pinocchio_data);
   crocoddyl::DataCollectorActMultibody shared_data(&pinocchio_data,
                                                    actuation_data);
 
@@ -247,7 +247,7 @@ void test_partial_derivatives_in_cost_sum(
   boost::shared_ptr<crocoddyl::ActuationModelAbstract> actuation =
       boost::make_shared<crocoddyl::ActuationModelFull>(state);
   const boost::shared_ptr<crocoddyl::ActuationDataAbstract>& actuation_data =
-      actuation->createData();
+      actuation->createData(&pinocchio_data);
   crocoddyl::DataCollectorActMultibody shared_data(&pinocchio_data,
                                                    actuation_data);
   const boost::shared_ptr<crocoddyl::CostDataAbstract>& data =

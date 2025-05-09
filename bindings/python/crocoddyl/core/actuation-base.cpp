@@ -90,12 +90,16 @@ void exposeActuationAbstract() {
            ":param x: state point (dim. state.nx)\n"
            ":param u: joint-torque input (dim nu)")
       .def("createData", &ActuationModelAbstract_wrap::createData,
-           &ActuationModelAbstract_wrap::default_createData, bp::args("self"),
+           bp::with_custodian_and_ward_postcall<0, 2>(),
+           bp::args("self", "data"),
            "Create the actuation data.\n\n"
            "Each actuation model (AM) has its own data that needs to be "
            "allocated.\n"
            "This function returns the allocated data for a predefined AM.\n"
+           ":param data: Pinocchio data\n"
            ":return AM data.")
+      .def("createData", &ActuationModelAbstract_wrap::default_createData,
+           bp::with_custodian_and_ward_postcall<0, 2>())
       .add_property("nu",
                     bp::make_function(&ActuationModelAbstract_wrap::get_nu),
                     "dimension of joint-torque vector")
@@ -114,11 +118,17 @@ void exposeActuationAbstract() {
       "an user-defined \n"
       "actuation model. The actuation data typically is allocated onces by "
       "running model.createData().",
-      bp::init<ActuationModelAbstract*>(
-          bp::args("self", "model"),
+      bp::init<ActuationModelAbstract*, pinocchio::Data*>(
+          bp::args("self", "model", "data"),
           "Create common data shared between actuation models.\n\n"
           "The actuation data uses the model in order to first process it.\n"
-          ":param model: actuation model"))
+          ":param model: actuation model\n"
+          ":param data: Pinocchio data")[bp::with_custodian_and_ward<
+          1, 2, bp::with_custodian_and_ward<1, 3> >()])
+      .add_property("pinocchio",
+                    bp::make_getter(&ActuationDataAbstract::pinocchio,
+                                    bp::return_internal_reference<>()),
+                    "pinocchio data")
       .add_property("tau",
                     bp::make_getter(&ActuationDataAbstract::tau,
                                     bp::return_internal_reference<>()),
